@@ -1,0 +1,3 @@
+[build]
+  publish = "kfh-helper"
+  functions = "kfh-helper/netlify/functions"
