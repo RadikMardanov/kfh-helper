@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Анкета хозяйства — КФХ-Помощник</title>
+<meta name="description" content="Анкета хозяйства: автозаполнение по ИНН и помощником GigaChat (голос, текст, фото документов) с ручной корректировкой, расширенная детализация под требования грантов и субсидий." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.label .opt{color:var(--muted);font-weight:500}
+.input,.select{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus,.select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+textarea.input{min-height:120px;height:auto;resize:vertical}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;align-items:center}
+.check-row{display:flex;align-items:flex-start;gap:10px;margin-top:14px;font-size:15px;color:var(--ink)}
+.check-row input{width:22px;height:22px;margin-top:2px;accent-color:var(--green);flex-shrink:0}
+.msg{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;font-size:15px;font-weight:600}
+.msg.error{display:block;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+.msg.success{display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.msg.info{display:block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8}
+.saved-info{margin-top:10px;font-size:14px;color:var(--muted)}
+.form-sub{margin:22px 0 4px;font-size:17px;font-weight:800;color:var(--green-deep)}
+.inn-top{padding:14px 16px;background:var(--green-soft);border:1px solid rgba(22,163,74,.22);border-radius:14px}
+.giga-box{margin-top:12px;padding:14px 16px;background:#fff;border:1px dashed rgba(22,163,74,.5);border-radius:14px}
+.giga-box .giga-title{font-weight:800;font-size:16px;color:var(--green-deep)}
+.giga-draft{box-shadow:0 0 0 3px rgba(22,163,74,.28)!important;border-color:var(--green)!important}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal[hidden]{display:none}
+.modal-card{width:100%;max-width:560px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:22px;padding:22px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.modal-head h2{margin:0;font-size:20px;font-weight:900;color:var(--green-deep)}
+.modal-close{min-width:40px;height:40px;border-radius:10px;border:1px solid #d3d9df;background:#fff;font-size:17px;font-weight:800;cursor:pointer}
+@media (max-width:640px){.card{padding:16px 14px}.grid-2{grid-template-columns:1fr}.btn-row .btn{flex:1 1 100%;white-space:normal;text-align:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <section class="biz-card">
+    <h1>🏡 Анкета хозяйства</h1>
+    <p>Начните с ИНН — данные подставятся автоматически. Или опишите хозяйство своими словами / продиктуйте / сфотографируйте документ — помощник разложит всё по полям черновиком.</p>
+  </section>
+
+  <div class="card">
+    <h2 class="card-title">Анкета хозяйства</h2>
+
+    <div class="inn-top">
+      <label class="label" for="inn" style="margin-top:0">ИНН хозяйства</label>
+      <input class="input" type="text" id="inn" inputmode="numeric" placeholder="10 или 12 цифр" />
+      <div class="btn-row">
+        <button class="btn btn-primary" id="inn-fill" type="button">🔍 Заполнить по ИНН</button>
+      </div>
+      <p class="hint" id="inn-status" style="margin:6px 0 0">Подставим название, тип хозяйства, дату регистрации и ОКВЭД из ЕГРИП/ЕГРЮЛ.</p>
+    </div>
+
+    <div class="giga-box">
+      <div class="giga-title">✨ Заполнить помощником</div>
+      <p class="hint" style="margin:4px 0 8px">Опишите хозяйство словами, продиктуйте голосом или сфотографируйте документ (выписка, декларация, справка) — поля заполнятся черновиком для проверки.</p>
+      <div class="check-row" style="margin-top:0">
+        <input type="checkbox" id="giga-consent" />
+        <span>Согласен на обработку введённых данных и фото документов для автозаполнения анкеты (GigaChat, РФ)</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-wrap" id="giga-open" type="button">✨ Открыть помощника</button>
+      </div>
+    </div>
+
+    <label class="label" for="farm_name">Название хозяйства</label>
+    <input class="input" type="text" id="farm_name" placeholder="Например: КФХ Иванов" />
+
+    <div class="grid-2">
+      <div>
+        <label class="label" for="region">Регион</label>
+        <input class="input" type="text" id="region" value="Республика Татарстан" />
+      </div>
+      <div>
+        <label class="label" for="district">Район <span class="opt">(необязательно)</span></label>
+        <input class="input" type="text" id="district" placeholder="Например: Пестречинский" />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label class="label" for="farm_type">Тип хозяйства</label>
+        <select class="select" id="farm_type">
+          <option value="КФХ">КФХ</option>
+          <option value="ИП">ИП</option>
+          <option value="ЛПХ">ЛПХ</option>
+          <option value="ООО">ООО</option>
+          <option value="СПК">СПК</option>
+          <option value="Другое">Другое</option>
+        </select>
+        <p class="hint" id="type-hint">Подставляется автоматически по ИНН (ОПФ).</p>
+      </div>
+      <div>
+        <label class="label" for="activity_type">Направление деятельности</label>
+        <select class="select" id="activity_type">
+          <option value="Растениеводство">Растениеводство</option>
+          <option value="Животноводство">Животноводство</option>
+          <option value="Смешанное">Смешанное</option>
+          <option value="Переработка">Переработка</option>
+          <option value="Другое">Другое</option>
+        </select>
+      </div>
+    </div>
+
+    <label class="label" for="land_area">Площадь земли, га <span class="opt">(необязательно)</span></label>
+    <input class="input" type="number" id="land_area" min="0" step="0.01" placeholder="Например: 120" />
+
+    <div class="check-row">
+      <input type="checkbox" id="seasonal" />
+      <span>Есть сезонные работники</span>
+    </div>
+
+    <h3 class="form-sub">Детализация для подбора субсидий</h3>
+    <p class="hint" style="margin-top:0">Дата регистрации и ОКВЭД подставляются по ИНН — при необходимости исправьте вручную.</p>
+
+    <div class="grid-2">
+      <div>
+        <label class="label" for="reg_date">Дата регистрации (ЕГРИП/ЕГРЮЛ)</label>
+        <input class="input" type="date" id="reg_date" />
+      </div>
+      <div>
+        <label class="label" for="okved_main">Основной ОКВЭД <span class="opt">(код)</span></label>
+        <input class="input" type="text" id="okved_main" placeholder="Например: 01.11.1" />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label class="label" for="workers_count">Число работников <span class="opt">(необязательно)</span></label>
+        <input class="input" type="number" id="workers_count" min="0" placeholder="Включая сезонных" />
+      </div>
+      <div>
+        <label class="label" for="cattle_count">Поголовье КРС, голов <span class="opt">(необязательно)</span></label>
+        <input class="input" type="number" id="cattle_count" min="0" placeholder="Для животноводства" />
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div>
+        <label class="label" for="members_count">Членов кооператива <span class="opt">(для СПК)</span></label>
+        <input class="input" type="number" id="members_count" min="0" placeholder="Например: 7" />
+      </div>
+      <div></div>
+    </div>
+
+    <div class="check-row"><input type="checkbox" id="cattle_dairy" /><span>Есть молочное стадо КРС</span></div>
+    <div class="check-row"><input type="checkbox" id="has_machinery" /><span>Есть или планируется сельхозтехника</span></div>
+    <div class="check-row"><input type="checkbox" id="no_tax_debt" /><span>Нет задолженности по налогам и взносам</span></div>
+    <div class="check-row"><input type="checkbox" id="export_activity" /><span>Продаём продукцию за пределы РФ</span></div>
+    <div class="check-row"><input type="checkbox" id="rural_residence" /><span>Проживаем / работаем в сельской местности</span></div>
+
+    <h3 class="form-sub">Земля и производство</h3>
+    <label class="label" for="land_title">Права на землю</label>
+    <select class="select" id="land_title">
+      <option value="">Не указано</option>
+      <option>Собственность</option>
+      <option>Аренда</option>
+      <option>Собственность и аренда</option>
+      <option>Земли нет</option>
+    </select>
+    <div class="check-row"><input type="checkbox" id="land_for_project" /><span>Есть земля под проект (строительство/ферма) в собственности или аренде</span></div>
+    <div class="check-row"><input type="checkbox" id="apk_reports" /><span>Сдаю отчётность по формам АПК</span></div>
+    <div class="check-row"><input type="checkbox" id="vetis_done" /><span>Скот учтён в ВетИС (идентификация)</span></div>
+    <div class="check-row"><input type="checkbox" id="evsd_done" /><span>Оформляю эВСД в «Меркурии» при отгрузке</span></div>
+
+    <h3 class="form-sub">Финансы и обязательства</h3>
+    <div class="grid-2">
+      <div>
+        <label class="label" for="own_funds_pct">Доля собственных средств в проекте, % <span class="opt">(необязательно)</span></label>
+        <input class="input" type="number" id="own_funds_pct" min="0" max="100" placeholder="Например: 15" />
+      </div>
+      <div>
+        <label class="label" for="agro_revenue_share">Доля с/х выручки в общей выручке, % <span class="opt">(необязательно)</span></label>
+        <input class="input" type="number" id="agro_revenue_share" min="0" max="100" placeholder="Например: 85" />
+      </div>
+    </div>
+    <div class="check-row"><input type="checkbox" id="collateral_lack" /><span>Не хватает залога для кредита</span></div>
+    <div class="check-row"><input type="checkbox" id="sme_registry" /><span>Хозяйство есть в реестре МСП <span class="opt">(проверить: rmsp.nalog.ru)</span></span></div>
+    <div class="check-row"><input type="checkbox" id="okved_agro" /><span>Основной ОКВЭД относится к сельскому хозяйству <span class="opt">(авто по коду ОКВЭД, можно поправить)</span></span></div>
+
+    <h3 class="form-sub">Условия грантов</h3>
+    <label class="label" for="family_members">Членов семьи участвует в хозяйстве <span class="opt">(необязательно)</span></label>
+    <input class="input" type="number" id="family_members" min="0" placeholder="Например: 3" />
+    <div class="check-row"><input type="checkbox" id="prev_agrostartup" /><span>Ранее НЕ получал грант «Агростартап»</span></div>
+    <div class="check-row"><input type="checkbox" id="commit_5y" /><span>Готов взять обязательство работать не менее 5 лет</span></div>
+
+    <p class="msg" id="msg"></p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="save-btn">Сохранить анкету</button>
+      <button class="btn btn-secondary" id="clear-btn">Очистить поля</button>
+    </div>
+    <p class="saved-info" id="saved-info"></p>
+  </div>
+
+  <!-- МОДАЛКА ПОМОЩНИКА -->
+  <div class="modal" id="giga-modal" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h2>✨ Помощник заполнения</h2>
+        <button class="modal-close" id="giga-close" type="button">✕</button>
+      </div>
+      <p class="hint">Опишите хозяйство своими словами или продиктуйте. Пример: «КФХ, 120 гектаров в аренде, 40 голов молочного стада, три работника, долгов по налогам нет, зарегистрированы в 2024 году, Пестречинский район».</p>
+      <label class="label" for="giga-text">Описание хозяйства</label>
+      <textarea class="input" id="giga-text" placeholder="Пишите как есть, без формальностей…"></textarea>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-wrap" id="voice-btn" type="button">🎤 Диктовать</button>
+        <button class="btn btn-secondary btn-wrap" id="file-btn" type="button">📄 Сфотографировать документ</button>
+        <input type="file" id="giga-file" accept="image/*" capture="environment" hidden />
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary btn-wrap" id="giga-send" type="button">Заполнить анкету</button>
+      </div>
+      <p class="hint" id="giga-status" style="margin-top:8px"></p>
+    </div>
+  </div>
+
+  <div class="footer">
+    <p>© <span id="year"></span> <a href="index.html">КФХ-Помощник</a> · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p>Данные анкеты и фото документов используются только для автозаполнения и не передаются третьим лицам, кроме GigaChat (Сбер, РФ) при вашем согласии.</p>
+  </div>
+</div>
+
+<script>
+var SESSION_KEY="kfh_helper_demo_session_v1";
+var PROFILE_KEY="kfh_helper_demo_profile_v1";
+function $(id){return document.getElementById(id);}
+$("year").textContent=new Date().getFullYear();
+
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+function sb(){return window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);}
+
+function normDateISO(v){
+  if(v===null||v===undefined)return "";
+  if(typeof v==="number"||/^\d{10}(\d{3})?$/.test(String(v))){
+    var n=Number(v);
+    if(n<1e11)n=n*1000;
+    var dt=new Date(n);
+    if(!isNaN(dt))return dt.toISOString().split("T")[0];
+  }
+  var s=String(v).trim();
+  if(!s)return "";
+  if(/^\d{4}-\d{2}-\d{2}/.test(s))return s.slice(0,10);
+  var m=s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})/);
+  if(m)return m[3]+"-"+(m[2].length<2?"0"+m[2]:m[2])+"-"+(m[1].length<2?"0"+m[1]:m[1]);
+  var m2=s.match(/^(\d{4})(\d{2})(\d{2})/);
+  if(m2)return m2[1]+"-"+m2[2]+"-"+m2[3];
+  var d=new Date(s);
+  if(!isNaN(d))return d.toISOString().split("T")[0];
+  return "";
+}
+
+function detectFarmType(src){
+  var opf=String((src.opf&&src.opf.short)||"").toUpperCase();
+  var full=String((src.name&&src.name.short_with_opf)||"").toUpperCase();
+  var s=opf||full;
+  if(!s)return "";
+  if(s.indexOf("КФХ")>=0)return "КФХ";
+  if(s.indexOf("СПК")>=0||s.indexOf("КООПЕРАТИВ")>=0||s.indexOf("АРТЕЛЬ")>=0)return "СПК";
+  if(s.indexOf("ИП")===0||s.indexOf("ИНДИВИДУАЛЬНЫЙ ПРЕДПРИНИМАТЕЛЬ")>=0)return "ИП";
+  if(s.indexOf("ЛПХ")>=0)return "ЛПХ";
+  if(s.indexOf("ООО")>=0||s.indexOf("ПАО")>=0||s.indexOf("АО")>=0||s.indexOf("ОАО")>=0||s.indexOf("ЗАО")>=0)return "ООО";
+  return "";
+}
+
+var fields={
+  inn:$("inn"),
+  farm_name:$("farm_name"),region:$("region"),district:$("district"),
+  farm_type:$("farm_type"),activity_type:$("activity_type"),
+  land_area:$("land_area"),
+  reg_date:$("reg_date"),okved_main:$("okved_main"),
+  workers_count:$("workers_count"),cattle_count:$("cattle_count"),members_count:$("members_count"),
+  land_title:$("land_title"),
+  own_funds_pct:$("own_funds_pct"),agro_revenue_share:$("agro_revenue_share"),
+  family_members:$("family_members")
+};
+var ALL_CHECKS=["seasonal","cattle_dairy","has_machinery","no_tax_debt","export_activity","rural_residence",
+  "land_for_project","apk_reports","vetis_done","evsd_done",
+  "collateral_lack","sme_registry","okved_agro",
+  "prev_agrostartup","commit_5y"];
+var dadataExtra=null;
+
+function showMsg(t,c){var m=$("msg");m.textContent=t;m.className="msg "+c;}
+function clearMsg(){var m=$("msg");m.textContent="";m.className="msg";}
+
+function isAgroOkved(code){return /^0[123]/.test(String(code||"").trim());}
+fields.okved_main.addEventListener("input",function(){
+  $("okved_agro").checked=isAgroOkved(fields.okved_main.value);
+});
+
+function collectData(){
+  return {
+    inn:fields.inn.value.trim(),
+    farm_name:fields.farm_name.value.trim(),
+    region:fields.region.value.trim(),
+    district:fields.district.value.trim(),
+    farm_type:fields.farm_type.value,
+    activity_type:fields.activity_type.value,
+    land_area:fields.land_area.value,
+    seasonal:$("seasonal").checked,
+    reg_date:fields.reg_date.value,
+    okved_main:fields.okved_main.value.trim(),
+    workers_count:fields.workers_count.value,
+    cattle_count:fields.cattle_count.value,
+    members_count:fields.members_count.value,
+    cattle_dairy:$("cattle_dairy").checked,
+    has_machinery:$("has_machinery").checked,
+    no_tax_debt:$("no_tax_debt").checked,
+    export_activity:$("export_activity").checked,
+    rural_residence:$("rural_residence").checked,
+    land_title:fields.land_title.value,
+    land_for_project:$("land_for_project").checked,
+    apk_reports:$("apk_reports").checked,
+    vetis_done:$("vetis_done").checked,
+    evsd_done:$("evsd_done").checked,
+    own_funds_pct:fields.own_funds_pct.value,
+    agro_revenue_share:fields.agro_revenue_share.value,
+    collateral_lack:$("collateral_lack").checked,
+    sme_registry:$("sme_registry").checked,
+    okved_agro:$("okved_agro").checked,
+    family_members:fields.family_members.value,
+    prev_agrostartup:$("prev_agrostartup").checked,
+    commit_5y:$("commit_5y").checked
+  };
+}
+
+function fillForm(d){
+  if(!d)return;
+  fields.inn.value=d.inn||"";
+  fields.farm_name.value=d.farm_name||"";
+  fields.region.value=d.region||"Республика Татарстан";
+  fields.district.value=d.district||"";
+  fields.farm_type.value=d.farm_type||"КФХ";
+  fields.activity_type.value=d.activity_type||"Растениеводство";
+  fields.land_area.value=d.land_area_ha||d.land_area||"";
+  fields.reg_date.value=normDateISO(d.reg_date);
+  fields.okved_main.value=d.okved_main||"";
+  fields.workers_count.value=d.workers_count||"";
+  fields.cattle_count.value=d.cattle_count||"";
+  fields.members_count.value=d.members_count||"";
+  fields.land_title.value=d.land_title||"";
+  fields.own_funds_pct.value=d.own_funds_pct||"";
+  fields.agro_revenue_share.value=d.agro_revenue_share||"";
+  fields.family_members.value=d.family_members||"";
+  $("seasonal").checked=Boolean(d.has_seasonal_workers||d.seasonal);
+  $("cattle_dairy").checked=Boolean(d.cattle_dairy);
+  $("has_machinery").checked=Boolean(d.has_machinery);
+  $("no_tax_debt").checked=Boolean(d.no_tax_debt);
+  $("export_activity").checked=Boolean(d.export_activity);
+  $("rural_residence").checked=Boolean(d.rural_residence);
+  $("land_for_project").checked=Boolean(d.land_for_project);
+  $("apk_reports").checked=Boolean(d.apk_reports);
+  $("vetis_done").checked=Boolean(d.vetis_done);
+  $("evsd_done").checked=Boolean(d.evsd_done);
+  $("collateral_lack").checked=Boolean(d.collateral_lack);
+  $("sme_registry").checked=Boolean(d.sme_registry);
+  $("okved_agro").checked=Boolean(d.okved_agro);
+  $("prev_agrostartup").checked=Boolean(d.prev_agrostartup);
+  $("commit_5y").checked=Boolean(d.commit_5y);
+}
+
+/* =========================================================
+   GIGACHAT: черновое заполнение анкеты
+   ========================================================= */
+function markDraft(el){el.classList.add("giga-draft");}
+function clearDraftMarks(){document.querySelectorAll(".giga-draft").forEach(function(el){el.classList.remove("giga-draft");});}
+
+function setSelectIfValid(sel,val){
+  if(!val)return false;
+  for(var i=0;i<sel.options.length;i++){
+    if(sel.options[i].value===val||sel.options[i].text===val){sel.value=sel.options[i].value;markDraft(sel);return true;}
+  }
+  return false;
+}
+function setNumIfValid(el,val){
+  var n=Number(val);
+  if(val===null||val===undefined||val===""||isNaN(n))return false;
+  el.value=n;markDraft(el);return true;
+}
+function setBoolIfValid(id,val){
+  if(typeof val!=="boolean")return false;
+  $(id).checked=val;markDraft($(id).parentElement&&$(id).parentElement.querySelector("span")?$(id):$(id));
+  markDraft($(id));
+  return true;
+}
+function setStrIfValid(el,val){
+  if(!val||typeof val!=="string")return false;
+  el.value=val;markDraft(el);return true;
+}
+
+function applyGigaDraft(d){
+  if(!d||typeof d!=="object")return 0;
+  clearDraftMarks();
+  var n=0;
+  if(setStrIfValid(fields.farm_name,d.farm_name))n++;
+  if(setStrIfValid(fields.region,d.region))n++;
+  if(setStrIfValid(fields.district,d.district))n++;
+  if(setSelectIfValid(fields.farm_type,d.farm_type))n++;
+  if(setSelectIfValid(fields.activity_type,d.activity_type))n++;
+  if(setSelectIfValid(fields.land_title,d.land_title))n++;
+  if(setNumIfValid(fields.land_area,d.land_area))n++;
+  if(setNumIfValid(fields.workers_count,d.workers_count))n++;
+  if(setNumIfValid(fields.cattle_count,d.cattle_count))n++;
+  if(setNumIfValid(fields.members_count,d.members_count))n++;
+  if(setNumIfValid(fields.family_members,d.family_members))n++;
+  if(setNumIfValid(fields.own_funds_pct,d.own_funds_pct))n++;
+  if(setNumIfValid(fields.agro_revenue_share,d.agro_revenue_share))n++;
+  var rd=normDateISO(d.reg_date);
+  if(rd){fields.reg_date.value=rd;markDraft(fields.reg_date);n++;}
+  if(setStrIfValid(fields.okved_main,d.okved_main)){
+    $("okved_agro").checked=isAgroOkved(d.okved_main);
+    n++;
+  }
+  ["seasonal","cattle_dairy","has_machinery","no_tax_debt","export_activity","rural_residence",
+   "land_for_project","apk_reports","vetis_done","evsd_done","collateral_lack","sme_registry",
+   "okved_agro","prev_agrostartup","commit_5y"].forEach(function(id){
+    if(setBoolIfValid(id,d[id]))n++;
+  });
+  return n;
+}
+
+async function callGiga(payload){
+  var r=await fetch("/.netlify/functions/gigachat-fill",{
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify(payload)
+  });
+  return await r.json();
+}
+
+function handleGigaResult(res){
+  $("giga-send").disabled=false;
+  $("voice-btn").disabled=false;
+  if(!res||res.ok===false){
+    var m=(res&&res.message)||"Помощник временно недоступен. Попробуйте позже или заполните вручную.";
+    $("giga-status").textContent=m;
+    showMsg(m,"error");
+    return;
+  }
+  var n=applyGigaDraft(res.data||{});
+  $("giga-modal").hidden=true;
+  if(n>0){
+    showMsg("Помощник заполнил полей: "+n+". Они подсвечены зелёным — проверьте и нажмите «Сохранить анкету».","success");
+  }else{
+    showMsg("Помощник не нашёл в тексте данных для анкеты. Опишите хозяйство подробнее или заполните вручную.","info");
+  }
+}
+
+$("giga-open").addEventListener("click",function(){
+  if(!$("giga-consent").checked){alert("Отметьте согласие на обработку данных для автозаполнения.");return;}
+  $("giga-modal").hidden=false;
+  $("giga-status").textContent="";
+});
+$("giga-close").addEventListener("click",function(){$("giga-modal").hidden=true;});
+$("giga-modal").addEventListener("click",function(e){if(e.target===this)this.hidden=true;});
+
+$("giga-send").addEventListener("click",async function(){
+  var text=$("giga-text").value.trim();
+  if(!text){$("giga-status").textContent="Введите описание хозяйства или продиктуйте его.";return;}
+  $("giga-send").disabled=true;
+  $("giga-status").textContent="Помощник читает описание…";
+  try{
+    var res=await callGiga({text:text});
+    handleGigaResult(res);
+  }catch(e){
+    handleGigaResult({ok:false,message:"Ошибка соединения с помощником."});
+  }
+});
+
+/* голос → текст (Web Speech API браузера) */
+$("voice-btn").addEventListener("click",function(){
+  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){
+    $("giga-status").textContent="Браузер не поддерживает диктовку. На iPhone нажмите 🎤 на клавиатуре и говорите — текст попадёт в поле. Или введите вручную.";
+    return;
+  }
+  var recog=new SR();
+  recog.lang="ru-RU";recog.interimResults=false;recog.maxAlternatives=1;
+  $("voice-btn").disabled=true;
+  $("giga-status").textContent="Слушаю… говорите описание хозяйства.";
+  recog.onresult=function(e){
+    var t=e.results[0][0].transcript;
+    $("giga-text").value=($("giga-text").value+" "+t).trim();
+    $("giga-status").textContent="Распознано: "+t;
+  };
+  recog.onerror=function(){ $("giga-status").textContent="Не удалось распознать речь. Попробуйте ещё раз или введите текст."; };
+  recog.onend=function(){ $("voice-btn").disabled=false; };
+  recog.start();
+});
+
+/* фото документа → base64 → GigaChat */
+$("file-btn").addEventListener("click",function(){$("giga-file").click();});
+$("giga-file").addEventListener("change",function(){
+  var f=this.files&&this.files[0];
+  if(!f)return;
+  if(f.size>4*1024*1024){$("giga-status").textContent="Фото слишком большое (до 4 МБ). Сфотографируйте в меньшем качестве.";this.value="";return;}
+  var rd=new FileReader();
+  $("giga-send").disabled=true;
+  $("giga-status").textContent="Читаю документ…";
+  rd.onload=function(){
+    var b64=String(rd.result).split(",")[1]||"";
+    callGiga({image:{mime:f.type||"image/jpeg",base64:b64}})
+      .then(handleGigaResult)
+      .catch(function(){handleGigaResult({ok:false,message:"Ошибка соединения с помощником."});});
+  };
+  rd.readAsDataURL(f);
+  this.value="";
+});
+
+/* ---------- автозаполнение по ИНН (DaData) ---------- */
+$("inn-fill").addEventListener("click",async function(){
+  clearMsg();
+  var inn=fields.inn.value.replace(/\D/g,"");
+  if(!/^\d{10}(\d{2})?$/.test(inn)){showMsg("Укажите ИНН (10 или 12 цифр) и нажмите кнопку ещё раз.","error");return;}
+  if(!window.KFHInn){showMsg("Сервис автозаполнения не подключён (нет файла dadata.js).","error");return;}
+  $("inn-fill").disabled=true;
+  showMsg("Получаем данные по ИНН…","info");
+  try{
+    var raw=await KFHInn.lookup(inn);
+    var src=(raw&&raw.data)?raw.data:raw;
+    var name=(src.name&&(src.name.short_with_opf||src.name.full_with_opf))||"";
+    var addr=(src.address&&src.address.value)||"";
+    var ogrn=src.ogrn||"";
+    var head=(src.management&&src.management.name)||"";
+    var post=(src.management&&src.management.post)||"";
+    var okved=src.okved||"";
+    var regRaw=(src.state&&(src.state.registration_date||src.state.actuality_date))||src.ogrn_date||"";
+    var regd=normDateISO(regRaw);
+    var ftype=detectFarmType(src);
+    var filled=[];
+    if(name){fields.farm_name.value=name;filled.push("название");}
+    if(ftype){fields.farm_type.value=ftype;filled.push("тип ("+ftype+")");}
+    if(regd){fields.reg_date.value=regd;filled.push("дату регистрации");}
+    if(okved){fields.okved_main.value=okved;$("okved_agro").checked=isAgroOkved(okved);filled.push("ОКВЭД");}
+    dadataExtra={ogrn:ogrn,address:addr,head_name:head,head_post:post};
+    var note="";
+    if(inn.length===10&&fields.farm_type.value==="ИП")note=" Внимание: ИНН из 10 цифр — это юрлицо, проверьте тип.";
+    if(inn.length===12&&fields.farm_type.value==="ООО")note=" Внимание: ИНН из 12 цифр — это ИП/физлицо, проверьте тип.";
+    $("inn-status").textContent=(filled.length?("Подставлено: "+filled.join(", ")+"."):"Данные получены, но основных полей нет — заполните вручную.")+note;
+    showMsg(filled.length?"Автозаполнение выполнено. Проверьте и сохраните анкету.":"Не удалось подставить поля — заполните вручную.","success");
+  }catch(e){
+    showMsg("Не удалось получить данные: "+(e.message||"проверьте ИНН и попробуйте снова."),"error");
+  }
+  $("inn-fill").disabled=false;
+});
+
+/* ---------- сохранение ---------- */
+async function saveProfile(){
+  clearMsg();
+  var d=collectData();
+  if(!d.farm_name){showMsg("Укажите название хозяйства.","error");return;}
+  if(!d.region){showMsg("Укажите регион.","error");return;}
+  if(d.inn&&!/^\d{10}(\d{2})?$/.test(d.inn.replace(/\D/g,""))){showMsg("ИНН должен содержать 10 или 12 цифр.","error");return;}
+  $("save-btn").disabled=true;
+
+  if(supabaseReady()){
+    try{
+      var s=await sb().auth.getSession();
+      if(!s.data.session){location.href="login.html";return;}
+      var user=s.data.session.user;
+      var payload={
+        id:user.id,email:user.email,
+        farm_name:d.farm_name,region:d.region,district:d.district,
+        farm_type:d.farm_type,activity_type:d.activity_type,
+        land_area_ha:d.land_area?Number(d.land_area):null,
+        has_seasonal_workers:d.seasonal,inn:d.inn,
+        reg_date:d.reg_date||null,
+        okved_main:d.okved_main||null,
+        workers_count:d.workers_count?Number(d.workers_count):null,
+        cattle_count:d.cattle_count?Number(d.cattle_count):null,
+        cattle_dairy:d.cattle_dairy,
+        has_machinery:d.has_machinery,
+        members_count:d.members_count?Number(d.members_count):null,
+        no_tax_debt:d.no_tax_debt,
+        export_activity:d.export_activity,
+        rural_residence:d.rural_residence,
+        land_title:d.land_title||null,
+        land_for_project:d.land_for_project,
+        apk_reports:d.apk_reports,
+        vetis_done:d.vetis_done,
+        evsd_done:d.evsd_done,
+        own_funds_pct:d.own_funds_pct?Number(d.own_funds_pct):null,
+        agro_revenue_share:d.agro_revenue_share?Number(d.agro_revenue_share):null,
+        collateral_lack:d.collateral_lack,
+        sme_registry:d.sme_registry,
+        okved_agro:d.okved_agro,
+        family_members:d.family_members?Number(d.family_members):null,
+        prev_agrostartup:d.prev_agrostartup,
+        commit_5y:d.commit_5y
+      };
+      if(dadataExtra){
+        if(dadataExtra.ogrn)payload.ogrn=dadataExtra.ogrn;
+        if(dadataExtra.address)payload.address=dadataExtra.address;
+        if(dadataExtra.head_name)payload.head_name=dadataExtra.head_name;
+        if(dadataExtra.head_post)payload.head_post=dadataExtra.head_post;
+      }
+      var res=await sb().from("profiles").upsert(payload).select().single();
+      if(res.error){showMsg("Ошибка сохранения: "+res.error.message,"error");}
+      else{
+        clearDraftMarks();
+        showMsg("Анкета сохранена в аккаунте.","success");
+        $("saved-info").textContent="Анкета сохранена: "+new Date().toLocaleString("ru-RU");
+      }
+    }catch(e){
+      showMsg("Ошибка соединения. Попробуйте позже.","error");
+    }
+  }else{
+    d.updated_at=Date.now();
+    if(dadataExtra){d.ogrn=dadataExtra.ogrn;d.address=dadataExtra.address;d.head_name=dadataExtra.head_name;d.head_post=dadataExtra.head_post;}
+    localStorage.setItem(PROFILE_KEY,JSON.stringify(d));
+    clearDraftMarks();
+    showMsg("Анкета сохранена в этом браузере (демо-режим).","success");
+    $("saved-info").textContent="Анкета сохранена: "+new Date().toLocaleString("ru-RU");
+  }
+  $("save-btn").disabled=false;
+}
+$("save-btn").addEventListener("click",saveProfile);
+
+$("clear-btn").addEventListener("click",function(){
+  clearMsg();clearDraftMarks();
+  fields.inn.value="";
+  fields.farm_name.value="";
+  fields.region.value="Республика Татарстан";
+  fields.district.value="";
+  fields.farm_type.value="КФХ";
+  fields.activity_type.value="Растениеводство";
+  fields.land_area.value="";
+  fields.reg_date.value="";
+  fields.okved_main.value="";
+  fields.workers_count.value="";
+  fields.cattle_count.value="";
+  fields.members_count.value="";
+  fields.land_title.value="";
+  fields.own_funds_pct.value="";
+  fields.agro_revenue_share.value="";
+  fields.family_members.value="";
+  ALL_CHECKS.forEach(function(id){$(id).checked=false;});
+  $("inn-status").textContent="Подставим название, тип хозяйства, дату регистрации и ОКВЭД из ЕГРИП/ЕГРЮЛ.";
+  $("saved-info").textContent="";
+});
+
+(async function loadProfile(){
+  if(supabaseReady()){
+    try{
+      var s=await sb().auth.getSession();
+      if(s.data.session){
+        var r=await sb().from("profiles").select("*").eq("id",s.data.session.user.id).maybeSingle();
+        if(r.data){fillForm(r.data);$("saved-info").textContent="Анкета загружена из аккаунта.";return;}
+      }
+    }catch(e){}
+  }
+  try{
+    var d=JSON.parse(localStorage.getItem(PROFILE_KEY));
+    if(d){fillForm(d);$("saved-info").textContent="Анкета загружена из этого браузера.";}
+  }catch(e){}
+})();
+</script>
+
+<script src="dadata.js"></script>
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

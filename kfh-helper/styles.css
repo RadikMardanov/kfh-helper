@@ -1,0 +1,565 @@
+/* ==================================================
+   КФХ-Помощник
+   Дизайн в стиле агро-калькулятора:
+   светло-зелёный фон, зелёная градиентная hero-карточка,
+   пилюли-бейджи, светлые карточки, зелёные полоски у заголовков
+   ================================================== */
+
+:root {
+  --page-bg: #e7efe9;
+
+  --card-bg: #f7f8fa;
+  --card-border: #edeff2;
+  --inner-bg: #ffffff;
+  --inner-border: #e3e7ec;
+
+  --ink: #0f172a;
+  --muted: #6b7280;
+  --muted-soft: #8a94a0;
+
+  --green: #16a34a;
+  --green-dark: #15803d;
+  --green-deep: #14532d;
+  --green-soft: #e5f5ea;
+
+  --amber: #92610e;
+  --amber-soft: #fff8e8;
+  --amber-border: #f3e2b6;
+
+  --radius-card: 22px;
+  --radius-inner: 14px;
+  --radius-btn: 12px;
+
+  --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-hero: 0 14px 34px rgba(20, 83, 45, 0.22);
+
+  --container: 1240px;
+
+  --font:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Arial,
+    sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--page-bg);
+  color: var(--ink);
+  line-height: 1.55;
+  font-size: 16px;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+ul,
+p,
+h1,
+h2,
+h3 {
+  margin-top: 0;
+}
+
+.page {
+  max-width: var(--container);
+  margin: 0 auto;
+  padding: 24px 20px 40px;
+}
+
+/* =========================
+   Доступность
+   ========================= */
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 999;
+  background: #fff;
+  padding: 10px 14px;
+  border: 1px solid var(--inner-border);
+  border-radius: 10px;
+}
+
+.skip-link:focus {
+  left: 20px;
+  top: 20px;
+}
+
+/* =========================
+   Кнопки
+   ========================= */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: var(--radius-btn);
+  border: 1px solid transparent;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 160ms ease;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:focus-visible {
+  outline: 3px solid rgba(22, 163, 74, 0.35);
+  outline-offset: 2px;
+}
+
+.btn-large {
+  min-height: 50px;
+  padding: 13px 22px;
+  font-size: 16px;
+}
+
+/* Белая кнопка на зелёном фоне */
+.btn-light {
+  background: #ffffff;
+  color: var(--green-deep);
+}
+
+.btn-light:hover {
+  background: #f0fdf4;
+}
+
+/* Прозрачная кнопка с белой рамкой на зелёном */
+.btn-outline-light {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.65);
+  color: #ffffff;
+}
+
+.btn-outline-light:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* Обычные кнопки на светлом фоне */
+.btn-primary {
+  background: var(--green);
+  color: #ffffff;
+}
+
+.btn-primary:hover {
+  background: var(--green-dark);
+}
+
+.btn-secondary {
+  background: #ffffff;
+  border-color: #d3d9df;
+  color: var(--ink);
+}
+
+.btn-secondary:hover {
+  background: #f3f4f6;
+}
+
+/* =========================
+   Hero-карточка (зелёный градиент)
+   ========================= */
+
+.hero-card {
+  padding: 34px 38px 38px;
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    100deg,
+    #14532d 0%,
+    #178a46 48%,
+    #7cc31c 100%
+  );
+  color: #ffffff;
+  box-shadow: var(--shadow-hero);
+}
+
+.hero-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 22px;
+}
+
+.hero-brand {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.hero-logo {
+  font-size: 46px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.18));
+}
+
+.hero-brand h1 {
+  margin-bottom: 8px;
+  font-size: 42px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  font-weight: 800;
+}
+
+.hero-sub {
+  margin-bottom: 0;
+  max-width: 640px;
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.auth-area {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.hero-text {
+  max-width: 900px;
+  margin-bottom: 24px;
+  font-size: 17px;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+/* Пилюли-бейджи как в калькуляторе */
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 26px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  font-size: 14px;
+  font-weight: 600;
+  color: #ffffff;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* =========================
+   Светлые карточки секций
+   ========================= */
+
+.card {
+  margin-top: 26px;
+  padding: 30px 34px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Заголовок с зелёной вертикальной полоской */
+.card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.card-title::before {
+  content: "";
+  width: 7px;
+  height: 28px;
+  border-radius: 6px;
+  background: var(--green);
+  flex-shrink: 0;
+}
+
+.card-sub {
+  max-width: 900px;
+  margin-bottom: 24px;
+  color: var(--muted);
+}
+
+/* =========================
+   Модули
+   ========================= */
+
+.modules-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.module-tile {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 22px;
+  background: var(--inner-bg);
+  border: 1px solid var(--inner-border);
+  border-radius: var(--radius-inner);
+  transition: 160ms ease;
+}
+
+.module-tile:hover {
+  transform: translateY(-2px);
+  border-color: rgba(22, 163, 74, 0.45);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.07);
+}
+
+.module-icon {
+  width: 50px;
+  height: 50px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: var(--green-soft);
+  border: 1px solid rgba(22, 163, 74, 0.16);
+  font-size: 25px;
+}
+
+.module-tile h3 {
+  margin-bottom: 8px;
+  font-size: 19px;
+  font-weight: 800;
+}
+
+.module-tile p {
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.module-link {
+  margin-top: auto;
+  font-weight: 800;
+  color: var(--green-dark);
+}
+
+/* =========================
+   Шаги
+   ========================= */
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.step {
+  padding: 22px;
+  background: var(--inner-bg);
+  border: 1px solid var(--inner-border);
+  border-radius: var(--radius-inner);
+}
+
+.step-number {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  border-radius: 12px;
+  background: var(--green);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.step h3 {
+  margin-bottom: 8px;
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.step p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+/* =========================
+   Важные блоки
+   ========================= */
+
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.info-box {
+  padding: 20px 22px;
+  background: var(--amber-soft);
+  border: 1px solid var(--amber-border);
+  border-left: 5px solid #eab308;
+  border-radius: var(--radius-inner);
+}
+
+.info-box h3 {
+  margin-bottom: 8px;
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--amber);
+}
+
+.info-box p {
+  margin-bottom: 0;
+  color: #6d4d10;
+  font-size: 15px;
+}
+
+/* =========================
+   CTA
+   ========================= */
+
+.cta-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.cta-card .card-sub {
+  margin-bottom: 0;
+}
+
+.cta-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+/* =========================
+   Подвал
+   ========================= */
+
+.footer {
+  margin-top: 34px;
+  text-align: center;
+}
+
+.footer-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 22px;
+  margin-bottom: 14px;
+}
+
+.footer-nav a {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.footer-nav a:hover {
+  color: var(--green-dark);
+}
+
+.footer p {
+  margin-bottom: 0;
+  color: var(--muted-soft);
+  font-size: 13px;
+  max-width: 860px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* =========================
+   Адаптивность
+   ========================= */
+
+@media (max-width: 1024px) {
+  .modules-grid,
+  .steps,
+  .info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hero-brand h1 {
+    font-size: 34px;
+  }
+}
+
+@media (max-width: 680px) {
+  .page {
+    padding: 14px 12px 30px;
+  }
+
+  .hero-card {
+    padding: 24px 20px 26px;
+  }
+
+  .hero-top {
+    flex-direction: column;
+  }
+
+  .auth-area {
+    width: 100%;
+  }
+
+  .auth-area .btn {
+    flex: 1;
+  }
+
+  .hero-brand h1 {
+    font-size: 29px;
+  }
+
+  .hero-logo {
+    font-size: 36px;
+  }
+
+  .card {
+    padding: 22px 18px;
+  }
+
+  .card-title {
+    font-size: 22px;
+  }
+
+  .modules-grid,
+  .steps,
+  .info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cta-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .cta-actions .btn {
+    flex: 1;
+  }
+}

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Экономика поля — КФХ-Помощник</title>
+<meta name="description" content="Калькулятор экономики поля: техкарта по культурам, прибыль, рентабельность, сравнение культур по вашим данным, справочник цен по РТ, справка для банка." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+<!-- связка модулей через профиль -->
+<script src="profile-link.js"></script>
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--red:#b91c1c;--amber:#92610e;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.biz-card{margin-top:14px;padding:18px 20px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.biz-card h1{font-size:26px;font-weight:900;color:var(--green-deep);margin:0}
+.biz-card p{margin:6px 0 0;color:var(--muted);font-size:15px}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0 14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input,.select{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus,.select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.calc-msg{margin-top:12px;padding:12px 14px;background:#fef2f2;border:1px solid #fecaca;border-radius:10px;color:#b91c1c;font-size:15px;font-weight:700}
+.profile-hint{margin:6px 0 0;padding:10px 12px;background:var(--green-soft);border:1px solid rgba(22,163,74,.18);border-radius:10px;color:var(--green-deep);font-size:14px;font-weight:600}
+.scen-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.scen-card{padding:12px 14px;background:var(--inner-bg);border:1px solid var(--inner-border);border-radius:12px;min-width:0}
+.scen-card .t{font-size:14px;color:var(--muted);margin-bottom:6px}
+.scen-card .v{font-size:18px;font-weight:800;word-break:break-word}
+.res-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.res-card{padding:14px 16px;background:var(--inner-bg);border:1px solid var(--inner-border);border-radius:12px;min-width:0}
+.res-card .t{font-size:14px;color:var(--muted);margin-bottom:6px}
+.res-card .v{font-size:20px;font-weight:800;word-break:break-word}
+.v.pos{color:var(--green-dark)} .v.neg{color:var(--red)}
+.advice{margin-top:14px;padding:14px 16px;background:var(--green-soft);border:1px solid rgba(22,163,74,.18);border-radius:12px;font-size:15px}
+.advice.warn{background:var(--amber-soft);border-color:var(--amber-border)}
+.advice ul{margin:8px 0 0;padding-left:18px}
+.advice a{color:var(--green-dark);font-weight:800;text-decoration:underline}
+.ops-row{display:grid;grid-template-columns:1fr 170px 46px;gap:8px;margin-bottom:8px;align-items:center}
+.ops-total{margin-top:12px;padding:14px 16px;background:#fff;border:1px solid var(--inner-border);border-radius:12px;font-weight:800;font-size:16px}
+.cmp-wrap{overflow-x:auto;margin-top:16px}
+.cmp-table{width:100%;border-collapse:collapse;font-size:15px;min-width:860px}
+.cmp-table th,.cmp-table td{border:1px solid var(--inner-border);padding:8px 10px;text-align:left;background:#fff}
+.src-mine{color:var(--green-dark);font-weight:700}
+.src-man{color:var(--amber);font-weight:700}
+.src-ref{color:var(--muted);font-weight:700}
+.chk-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.chk{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#fff;border:1px solid var(--inner-border);border-radius:10px;font-size:15px}
+.chk input{accent-color:var(--green);width:20px;height:20px}
+.miss-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:12px 14px;background:var(--amber-soft);border:1px solid var(--amber-border);border-radius:12px;margin-bottom:10px;font-size:15px}
+.chart-title{font-weight:800;margin:14px 0 8px;font-size:16px}
+.bar-row{display:grid;grid-template-columns:140px 1fr 110px;gap:10px;align-items:center;margin-bottom:6px;font-size:14px}
+.bar{height:14px;border-radius:7px;background:var(--green)}
+.bar.neg{background:#dc2626}
+.bar-val{text-align:right;color:var(--muted);font-weight:700}
+.field-item{padding:14px 16px;background:#fff;border:1px solid var(--inner-border);border-radius:12px;margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.field-item .name{font-weight:800;font-size:16px}
+.field-item .meta{color:var(--muted);font-size:14px;flex:1 1 260px}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+#print-report{display:none}
+@media print{
+  body>*:not(#print-report){display:none!important}
+  #print-report{display:block;font-family:var(--font);color:#000;padding:20px}
+  #print-report h2{margin:0 0 6px} #print-report table{width:100%;border-collapse:collapse;font-size:12px}
+  #print-report th,#print-report td{border:1px solid #999;padding:6px 8px;text-align:left}
+}
+@media (max-width:1024px){.grid,.res-grid,.chk-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){
+  .grid,.grid-2,.res-grid,.chk-grid,.scen-grid{grid-template-columns:1fr}
+  .ops-row{grid-template-columns:1fr 110px 42px}
+  .card{padding:16px 14px}
+  .bar-row{grid-template-columns:90px 1fr 90px}
+  .btn-row .btn{flex:1 1 100%;white-space:normal;text-align:center}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <section class="biz-card">
+    <h1>📊 Экономика поля</h1>
+    <p>Считает выручку, затраты и прибыль по культуре и полю: понятно, что сеять выгодно. Данные хозяйства подставляются из анкеты автоматически.</p>
+  </section>
+
+  <div class="kfh-scrnav" id="scrnav"></div>
+
+  <!-- ================= РАСЧЁТ ================= -->
+  <section class="kfh-scr" data-scr="calc" data-title="Расчёт">
+    <div class="card">
+      <h2 class="card-title">Расчёт культуры</h2>
+      <div class="grid-2">
+        <div><label class="label" for="farmName">Хозяйство</label><input class="input" id="farmName" placeholder="КФХ Иванов" /></div>
+        <div><label class="label" for="fieldName">Поле / расчёт</label><input class="input" id="fieldName" placeholder="Поле №3" /></div>
+      </div>
+      <div class="grid-2">
+        <div>
+          <label class="label" for="crop">Культура</label>
+          <select class="select" id="crop">
+            <option value="">Выберите культуру</option>
+            <option>Пшеница озимая</option><option>Пшеница яровая</option>
+            <option>Ячмень</option><option>Кукуруза</option>
+            <option>Подсолнечник</option><option>Рапс</option>
+            <option>Соя</option><option>Другое</option>
+          </select>
+        </div>
+        <div><label class="label" for="area">Площадь, га</label><input class="input" type="number" id="area" min="0" step="0.01"></div>
+      </div>
+      <div class="profile-hint" id="profileHint" hidden></div>
+      <div class="grid-2">
+        <div><label class="label" for="yieldVal">Урожайность</label><input class="input" type="number" id="yieldVal" min="0" step="0.01"></div>
+        <div>
+          <label class="label" for="unit">Единицы</label>
+          <select class="select" id="unit"><option value="т/га">т/га</option><option value="ц/га">ц/га</option></select>
+        </div>
+      </div>
+      <label class="label" for="price">Цена реализации, руб./т</label>
+      <input class="input" type="number" id="price" min="0" step="1">
+      <p class="hint" id="yieldConv"></p>
+
+      <details class="kfh-det" id="detCosts">
+        <summary>Затраты на гектар</summary>
+        <div class="kfh-det-body">
+          <div class="grid">
+            <div><label class="label">Семена, руб./га</label><input class="input c" id="c_seeds" type="number" min="0"></div>
+            <div><label class="label">Удобрения, руб./га</label><input class="input c" id="c_fert" type="number" min="0"></div>
+            <div><label class="label">СЗР, руб./га</label><input class="input c" id="c_pps" type="number" min="0"></div>
+            <div><label class="label">ГСМ и топливо, руб./га</label><input class="input c" id="c_fuel" type="number" min="0"></div>
+            <div><label class="label">Оплата труда, руб./га</label><input class="input c" id="c_labor" type="number" min="0"></div>
+            <div><label class="label">Техника, руб./га</label><input class="input c" id="c_mach" type="number" min="0"></div>
+            <div><label class="label">Полив / вода, руб./га</label><input class="input c" id="c_water" type="number" min="0"></div>
+            <div><label class="label">Аренда земли, руб./га</label><input class="input c" id="c_rent" type="number" min="0"></div>
+            <div><label class="label">Прочие переменные, руб./га</label><input class="input c" id="c_other" type="number" min="0"></div>
+            <div><label class="label">Накладные, руб./га</label><input class="input c" id="c_fix" type="number" min="0"></div>
+            <div><label class="label">Операции (техкарта), руб./га</label><input class="input c" id="c_ops" type="number" min="0" placeholder="Из техкарты"></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-secondary" id="btnFromOps">Заполнить из техкарты</button>
+          </div>
+          <p class="hint">Не дублируйте затраты: если перенесли итог техкарты, остальные статьи оставьте пустыми.</p>
+        </div>
+      </details>
+
+      <details class="kfh-det" id="detScen">
+        <summary>Сценарий</summary>
+        <div class="kfh-det-body">
+          <select class="select" id="scenario">
+            <option value="real">Реалистичный</option>
+            <option value="pess">Пессимистичный (урожай −20%, цена −15%, расходы +10%)</option>
+            <option value="opt">Оптимистичный (урожай +15%, цена +10%)</option>
+          </select>
+        </div>
+      </details>
+
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btnPriceRef">📋 Цены РТ</button>
+        <button class="btn btn-secondary" id="btnFillCosts">Затраты примером</button>
+        <span class="hint" id="priceRefInfo" style="margin:0"></span>
+      </div>
+      <div class="calc-msg" id="calcMsg" hidden></div>
+      <div class="btn-row"><button class="btn btn-primary" id="btnCalc">Рассчитать</button></div>
+    </div>
+  </section>
+
+  <!-- ================= РЕЗУЛЬТАТ ================= -->
+  <section class="kfh-scr" data-scr="result" data-title="Результат">
+    <div class="card">
+      <h2 class="card-title">Результаты</h2>
+      <div class="scen-grid">
+        <div class="scen-card"><div class="t">Пессимистичный · прибыль</div><div class="v" id="sc-pess">—</div></div>
+        <div class="scen-card"><div class="t">Реалистичный · прибыль</div><div class="v" id="sc-real">—</div></div>
+        <div class="scen-card"><div class="t">Оптимистичный · прибыль</div><div class="v" id="sc-opt">—</div></div>
+      </div>
+      <div class="res-grid" id="resCards"></div>
+      <div class="advice" id="advice" hidden></div>
+      <div class="btn-row">
+        <button class="btn btn-primary" id="btnSaveField">Сохранить в мои поля</button>
+        <button class="btn btn-secondary" id="btnCsv">Экспорт CSV</button>
+        <button class="btn btn-secondary" id="btnPrint">Печать / PDF</button>
+        <button class="btn btn-secondary" id="btnBackCalc">Изменить расчёт</button>
+      </div>
+      <p class="hint">«Сохранить в мои поля» сохраняет расчёт на этом устройстве и в вашем аккаунте — данные не потеряются.</p>
+    </div>
+  </section>
+
+  <!-- ================= ТЕХКАРТА ================= -->
+  <section class="kfh-scr" data-scr="ops" data-title="Техкарта">
+    <div class="card">
+      <h2 class="card-title">Техкарта: стоимость операций</h2>
+      <label class="label" for="opsCrop">Культура</label>
+      <select class="select" id="opsCrop">
+        <option>Пшеница озимая</option><option>Пшеница яровая</option>
+        <option>Ячмень</option><option>Кукуруза</option>
+        <option>Подсолнечник</option><option>Рапс</option>
+        <option>Соя</option><option>Другое</option>
+      </select>
+      <p class="hint">Операции совпадают со статьями «Затраты на гектар». Можно добавлять свои, удалять и переименовывать — изменения сохраняются по культуре.</p>
+      <p class="hint" id="opsHint" hidden style="color:var(--amber);font-weight:700"></p>
+      <div id="opsList" style="margin-top:12px"></div>
+      <div class="btn-row"><button class="btn btn-secondary" id="opsAdd">+ Добавить операцию</button></div>
+      <div class="ops-total" id="opsTotal">Итого по техкарте: 0 руб./га</div>
+      <div class="btn-row"><button class="btn btn-primary" id="opsToCalc">Перенести в расчёт</button></div>
+    </div>
+  </section>
+
+  <!-- ================= СРАВНЕНИЕ ================= -->
+  <section class="kfh-scr" data-scr="compare" data-title="Сравнение">
+    <div class="card">
+      <h2 class="card-title">Сравнение культур</h2>
+      <p class="hint" style="margin:0 0 12px">Данные берутся из ваших расчётов («Мои поля»). Если по культуре нет данных — добавьте вручную или подставьте справочные.</p>
+      <div class="grid-2">
+        <div><label class="label" for="cmpArea">Площадь, га</label><input class="input" type="number" id="cmpArea" value="100" min="0" step="0.01"></div>
+        <div>
+          <label class="label" for="cmpScenario">Сценарий</label>
+          <select class="select" id="cmpScenario"><option value="real">Реалистичный</option><option value="pess">Пессимистичный</option><option value="opt">Оптимистичный</option></select>
+        </div>
+      </div>
+      <label class="label">Культуры для сравнения</label>
+      <div class="chk-grid" id="cmpCrops"></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="cmpAll">Все</button>
+        <button class="btn btn-secondary" id="cmpNone">Сброс</button>
+        <button class="btn btn-primary" id="cmpCalc">Рассчитать сравнение</button>
+        <button class="btn btn-secondary" id="cmpPrint">Печать</button>
+      </div>
+      <div id="cmpMissing" style="margin-top:12px"></div>
+      <div id="cmpForm" hidden style="margin-top:12px;padding:16px;background:#fff;border:1px solid var(--inner-border);border-radius:12px">
+        <h3 style="font-size:17px;font-weight:800;margin-bottom:8px">Вариант вручную</h3>
+        <label class="label" for="cmpF-crop">Культура</label>
+        <select class="select" id="cmpF-crop"></select>
+        <div class="grid-2">
+          <div><label class="label" for="cmpF-y">Урожайность, т/га</label><input class="input" type="number" id="cmpF-y" min="0" step="0.01"></div>
+          <div><label class="label" for="cmpF-p">Цена, руб./т</label><input class="input" type="number" id="cmpF-p" min="0" step="1"></div>
+        </div>
+        <label class="label" for="cmpF-c">Затраты, руб./га</label>
+        <input class="input" type="number" id="cmpF-c" min="0" step="1">
+        <div class="btn-row">
+          <button class="btn btn-primary" id="cmpF-save">Сохранить вариант</button>
+          <button class="btn btn-secondary" id="cmpF-cancel">Отмена</button>
+        </div>
+      </div>
+      <div id="cmpResult" hidden>
+        <div class="cmp-wrap"><table class="cmp-table" id="cmpTable"></table></div>
+        <div id="cmpCharts"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= МОИ ПОЛЯ ================= -->
+  <section class="kfh-scr" data-scr="fields" data-title="Мои поля">
+    <div class="card">
+      <h2 class="card-title">Мои поля</h2>
+      <div class="ops-total" id="fieldsSummary" hidden></div>
+      <div class="btn-row">
+        <button class="btn btn-secondary" id="btnNewCalc">Новый расчёт</button>
+        <button class="btn btn-primary" id="btnFieldsPrint">Печать отчёта</button>
+      </div>
+      <div id="fieldsList" style="margin-top:14px"></div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p>© <span id="kfh-year"></span> <a href="index.html">КФХ-Помощник</a> · Расчёты предварительные · <a href="disclaimer.html">Дисклеймер</a></p>
+  </div>
+</div>
+
+<div id="print-report"></div>
+
+<script>
+window.KFH_SCREEN_OPTS={mobile:"calc",desktop:"calc"};
+
+var FIELDS_KEY="kfh_agro_fields_v1";
+var FARM_KEY="kfh_agro_farm_v1";
+var COUNT_KEY="kfh_agro_calc_count_v1";
+var PROFILE_KEY="kfh_helper_demo_profile_v1";
+var OPS_BY_CROP="kfh_ops_by_crop_v2";
+var CMP_MANUAL="kfh_cmp_manual_v1";
+
+var CROPS={
+  "Пшеница озимая":{y:4.2,p:15000,c:[3500,9000,5500,4500,2000,6000,0,5000,1500,2500]},
+  "Пшеница яровая":{y:3.0,p:16000,c:[4000,7000,4500,4200,1800,5500,0,5000,1300,2400]},
+  "Ячмень":{y:3.5,p:13000,c:[3000,6500,4000,4000,1700,5200,0,5000,1200,2300]},
+  "Кукуруза":{y:6.5,p:14000,c:[8000,12000,6000,6000,2500,8000,0,5000,2000,3000]},
+  "Подсолнечник":{y:2.2,p:32000,c:[9000,10000,8000,6000,2500,8000,0,5000,2000,3000]},
+  "Рапс":{y:2.4,p:42000,c:[6000,11000,7000,5500,2200,7000,0,5000,1800,2800]},
+  "Соя":{y:2.2,p:38000,c:[7000,6000,6000,5000,2200,7000,0,5000,1800,2800]}
+};
+var COST_IDS=["c_seeds","c_fert","c_pps","c_fuel","c_labor","c_mach","c_water","c_rent","c_other","c_fix","c_ops"];
+var COST_NAMES=["Семена","Удобрения","СЗР","ГСМ и топливо","Оплата труда","Техника","Полив / вода","Аренда земли","Прочие переменные","Накладные"];
+
+function opsTemplateFor(crop){
+  var d=CROPS[crop];
+  if(!d)return COST_NAMES.map(function(n){return {n:n,c:0};});
+  return COST_NAMES.map(function(n,i){return {n:n,c:d.c[i]};});
+}
+
+function $(id){return document.getElementById(id);}
+function num(id){var v=parseFloat($(id).value);return isNaN(v)?0:v;}
+function fmt(n){return Math.round(n).toLocaleString("ru-RU");}
+function fmt2(n){return (Math.round(n*100)/100).toLocaleString("ru-RU",{maximumFractionDigits:2});}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function go(id){if(window.KFH&&KFH.goScreen)KFH.goScreen(id);}
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+function sb(){return window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);}
+
+var currentUserId=null;
+var profileRegion="";
+
+/* ---------- формулы ---------- */
+function calcCore(area,yieldTha,price,costPerHa){
+  var prod=area*yieldTha,revenue=prod*price,total=costPerHa*area,profit=revenue-total;
+  return{prod:prod,revenue:revenue,total:total,profit:profit,
+    profitHa:area>0?profit/area:0,margin:revenue>0?profit/revenue*100:null,
+    costHa:costPerHa,costTon:prod>0?total/prod:null,
+    beYield:price>0?costPerHa/price:null,bePrice:yieldTha>0?costPerHa/yieldTha:null};
+}
+function applyScen(base,sc){
+  if(sc==="pess")return{y:base.y*0.8,p:base.p*0.85,c:base.c*1.1};
+  if(sc==="opt")return{y:base.y*1.15,p:base.p*1.10,c:base.c};
+  return{y:base.y,p:base.p,c:base.c};
+}
+function readBase(){
+  var y=num("yieldVal");
+  if($("unit").value==="ц/га")y=y/10;
+  var cost=0;COST_IDS.forEach(function(id){cost+=num(id);});
+  return{area:num("area"),y:y,p:num("price"),c:cost};
+}
+
+/* ---------- цены РТ ---------- */
+var PRICES_DEFAULT={"Пшеница озимая":14000,"Пшеница яровая":15000,"Ячмень":12000,"Кукуруза":13000,"Подсолнечник":32000,"Рапс":41000,"Соя":37000};
+var activePrices=PRICES_DEFAULT,priceDate="август 2026";
+function applyRefToCrops(){for(var k in activePrices){if(CROPS[k])CROPS[k].p=activePrices[k];}}
+function showRefInfo(){$("priceRefInfo").textContent="Цены РТ: "+priceDate;}
+async function loadPrices(){
+  if(supabaseReady()){
+    try{
+      var r=await sb().from("prices").select("crop,price_rub_ton,updated_at");
+      if(r.data&&r.data.length){
+        var map={},maxDate=null;
+        r.data.forEach(function(row){map[row.crop]=Number(row.price_rub_ton);
+          if(row.updated_at&&(!maxDate||row.updated_at>maxDate))maxDate=row.updated_at;});
+        activePrices=map;
+        if(maxDate)priceDate=new Date(maxDate).toLocaleDateString("ru-RU");
+      }
+    }catch(e){}
+  }
+  applyRefToCrops();showRefInfo();
+}
+
+function updateYieldConv(){
+  var y=num("yieldVal");
+  if(y<=0){$("yieldConv").textContent="";return;}
+  $("yieldConv").textContent=($("unit").value==="ц/га")?"= "+fmt2(y/10)+" т/га (1 т = 10 ц)":"";
+}
+
+/* ---------- СВЯЗКА: автоподстановка из анкеты через profile-link ---------- */
+async function loadProfileIntoCalc(){
+  var p=null;
+  if(window.KFHProfile){
+    p=await KFHProfile.get();
+  }else{
+    try{p=JSON.parse(localStorage.getItem(PROFILE_KEY));}catch(e){p=null;}
+  }
+  if(!p)return;
+  profileRegion=p.region||"";
+  if(p.farm_name&&!$("farmName").value)$("farmName").value=p.farm_name;
+  var la=p.land_area_ha||p.land_area;
+  if(la&&num("area")<=0)$("area").value=la;
+  var h=$("profileHint");
+  if(h){
+    var s=(window.KFHProfile&&KFHProfile.summary)?KFHProfile.summary(p):(p.farm_name||"");
+    if(s){h.hidden=false;h.textContent="🏡 Из анкеты: "+s+(la?" · площадь подставлена":"");}
+  }
+}
+
+/* ---------- мои поля: кэш + база ---------- */
+var fieldsCache=null;
+function localFields(){try{return JSON.parse(localStorage.getItem(FIELDS_KEY))||[];}catch(e){return[];}}
+function getFields(){
+  if(fieldsCache===null)fieldsCache=localFields();
+  return fieldsCache;
+}
+function saveLocalFields(){localStorage.setItem(FIELDS_KEY,JSON.stringify(fieldsCache));}
+
+async function persistField(rec){
+  try{
+    var res=await sb().from("my_fields").insert({
+      id:rec.id,user_id:currentUserId,
+      farm:rec.farm||null,name:rec.name||null,crop:rec.crop||null,
+      area:rec.area,y:rec.y,unit:rec.unit,p:rec.p,c:rec.c,
+      sc:rec.sc||null,profit:rec.profit,margin:rec.margin,revenue:rec.revenue,total:rec.total,
+      ops:rec.ops||null,ops_crop:rec.ops_crop||null
+    });
+    if(res.error){alert("Не удалось сохранить в базу: "+res.error.message+". Копия осталась на этом устройстве.");return;}
+  }catch(e){}
+}
+async function deleteFieldDb(id){
+  try{await sb().from("my_fields").delete().eq("id",id);}catch(e){}
+}
+
+function renderFields(){
+  var f=getFields(),box=$("fieldsList"),sum=$("fieldsSummary");
+  if(!f.length){sum.hidden=true;box.innerHTML='<p class="hint">Сохранённых полей пока нет.</p>';return;}
+  var area=0,profit=0,rev=0;
+  f.forEach(function(x){area+=Number(x.area)||0;profit+=Number(x.profit)||0;rev+=Number(x.revenue)||0;});
+  var margin=rev>0?profit/rev*100:null;
+  sum.hidden=false;
+  sum.innerHTML="Всего полей: <b>"+f.length+"</b> · Площадь: <b>"+fmt2(area)+" га</b> · Прибыль: <b>"+(profit>=0?"+":"")+fmt(profit)+" ₽</b> · Средняя рентабельность: <b>"+(margin===null?"—":fmt2(margin)+"%")+"</b>";
+  box.innerHTML=f.map(function(x){
+    return '<div class="field-item"><div><div class="name">'+esc(x.name)+'</div>'+
+      '<div class="meta">'+esc(x.crop||"культура не выбрана")+' · '+fmt2(x.area)+' га · прибыль '+fmt(x.profit)+' руб.</div></div>'+
+      '<button class="btn btn-secondary" style="min-height:42px" onclick="openField('+x.id+')">Открыть</button>'+
+      '<button class="btn btn-secondary" style="min-height:42px" onclick="delField('+x.id+')">Удалить</button></div>';
+  }).join("");
+}
+function saveField(){
+  var b=readBase();
+  if(b.area<=0){alert("Введите площадь и нажмите «Рассчитать».");return;}
+  var r=render();
+  var rec={id:Date.now(),farm:$("farmName").value.trim(),
+    name:$("fieldName").value.trim()||$("crop").value||"Расчёт",
+    crop:$("crop").value,area:b.area,y:b.y,unit:$("unit").value,p:b.p,c:b.c,
+    sc:$("scenario").value,profit:r.profit,margin:r.margin,revenue:r.revenue,total:r.total,
+    ops:currentOpsArray(),ops_crop:$("opsCrop").value,saved_at:Date.now()};
+  getFields().push(rec);
+  if(currentUserId){persistField(rec);}else{saveLocalFields();}
+  localStorage.setItem(FARM_KEY,$("farmName").value.trim());
+  renderFields();
+  alert("Сохранено в мои поля"+(currentUserId?" и в аккаунт":"")+".");
+}
+function openField(id){
+  var x=getFields().find(function(t){return Number(t.id)===Number(id);});if(!x)return;
+  $("farmName").value=x.farm||"";$("fieldName").value=x.name;
+  $("crop").value=x.crop||"";$("area").value=x.area;
+  $("unit").value=x.unit||"т/га";$("yieldVal").value=x.y;$("price").value=x.p;
+  COST_IDS.forEach(function(cid,i){$(cid).value=(i<10?x.c[i]:"");});
+  $("scenario").value=x.sc||"real";
+  if(x.ops&&x.ops.length){
+    var store=opsStore();store[x.ops_crop||x.crop||"Другое"]=x.ops;opsStoreSave(store);
+    if(hasOption($("opsCrop"),x.ops_crop||x.crop))$("opsCrop").value=x.ops_crop||x.crop;
+    loadOpsForCrop($("opsCrop").value);
+  }
+  updateYieldConv();render();
+  go("result");
+}
+function delField(id){
+  if(!confirm("Удалить поле из списка?"))return;
+  fieldsCache=getFields().filter(function(t){return Number(t.id)!==Number(id);});
+  if(currentUserId){deleteFieldDb(id);}else{saveLocalFields();}
+  renderFields();
+}
+
+/* ---------- техкарта по культурам ---------- */
+function opsStore(){try{return JSON.parse(localStorage.getItem(OPS_BY_CROP))||{};}catch(e){return{};}}
+function opsStoreSave(v){localStorage.setItem(OPS_BY_CROP,JSON.stringify(v));}
+function hasOption(sel,val){if(!val)return false;return Array.prototype.some.call(sel.options,function(o){return o.value===val||o.text===val;});}
+function opsRow(name,cost){
+  var d=document.createElement("div");
+  d.className="ops-row";
+  d.innerHTML='<input class="input ops-name" value="'+esc(name||"")+'" placeholder="Операция">'+
+    '<input class="input ops-cost" type="number" min="0" value="'+(cost||"")+'" placeholder="руб./га">'+
+    '<button class="btn btn-danger ops-del" style="min-height:44px;background:#fff;border-color:#fecaca;color:#b91c1c" title="Удалить">×</button>';
+  return d;
+}
+function loadOpsForCrop(crop){
+  var store=opsStore();
+  var rows=store[crop]||opsTemplateFor(crop);
+  var box=$("opsList");box.innerHTML="";
+  rows.forEach(function(r){box.appendChild(opsRow(r.n,r.c));});
+  opsRecalc();
+}
+function currentOpsArray(){
+  var out=[];
+  document.querySelectorAll("#opsList .ops-row").forEach(function(row){
+    out.push({n:row.querySelector(".ops-name").value,c:parseFloat(row.querySelector(".ops-cost").value)||0});
+  });
+  return out;
+}
+function saveOpsCurrent(){
+  var store=opsStore();
+  store[$("opsCrop").value]=currentOpsArray();
+  opsStoreSave(store);
+}
+function opsRecalc(){
+  var sum=0;
+  document.querySelectorAll(".ops-cost").forEach(function(i){var v=parseFloat(i.value);if(!isNaN(v))sum+=v;});
+  $("opsTotal").textContent="Итого по техкарте: "+fmt(sum)+" руб./га";
+  return sum;
+}
+function enterOps(){
+  var c=$("crop").value;
+  if(hasOption($("opsCrop"),c))$("opsCrop").value=c;
+  loadOpsForCrop($("opsCrop").value);
+  $("opsHint").hidden=true;
+}
+$("opsCrop").addEventListener("change",function(){loadOpsForCrop($("opsCrop").value);});
+$("opsList").addEventListener("input",function(){opsRecalc();saveOpsCurrent();});
+$("opsList").addEventListener("click",function(e){
+  if(e.target.classList.contains("ops-del")){e.target.parentElement.remove();opsRecalc();saveOpsCurrent();}
+});
+$("opsAdd").addEventListener("click",function(){$("opsList").appendChild(opsRow("",""));opsRecalc();saveOpsCurrent();});
+$("opsToCalc").addEventListener("click",function(){
+  var total=opsRecalc();
+  if(hasOption($("crop"),$("opsCrop").value))$("crop").value=$("opsCrop").value;
+  $("c_ops").value=total;
+  $("detCosts").open=true;
+  go("calc");
+});
+
+/* ---------- заполнение затрат ---------- */
+function fillCosts(){
+  var d=CROPS[$("crop").value];
+  if(!d){alert("Сначала выберите культуру.");return;}
+  COST_IDS.forEach(function(id,i){$(id).value=(i<10?d.c[i]:"");});
+  $("detCosts").open=true;
+}
+function fillFromOps(){
+  var total=opsRecalc();
+  if(total>0){
+    $("c_ops").value=total;
+    $("detCosts").open=true;
+  }else{
+    $("opsHint").textContent="Сначала заполните техкарту — затем вернитесь в расчёт.";
+    $("opsHint").hidden=false;
+    enterOps();
+    go("ops");
+  }
+}
+
+/* ---------- валидация и расчёт ---------- */
+function validateCalc(){
+  var missing=[];
+  if(!$("crop").value)missing.push("культуру");
+  if(num("area")<=0)missing.push("площадь");
+  if(num("yieldVal")<=0)missing.push("урожайность");
+  if(num("price")<=0)missing.push("цену реализации");
+  var cost=0;COST_IDS.forEach(function(id){cost+=num(id);});
+  if(cost<=0)missing.push("затраты на гектар (хотя бы одну статью или «Заполнить из техкарты»)");
+  return missing;
+}
+function doCalc(){
+  var msg=$("calcMsg");
+  var missing=validateCalc();
+  if(missing.length){
+    msg.hidden=false;
+    msg.innerHTML="⚠️ Заполните для расчёта: <b>"+missing.join(", ")+"</b>.";
+    msg.scrollIntoView({behavior:"smooth",block:"center"});
+    return;
+  }
+  msg.hidden=true;
+  var r=render();
+  if(r){
+    var n=parseInt(localStorage.getItem(COUNT_KEY)||"0",10)+1;
+    localStorage.setItem(COUNT_KEY,String(n));
+    go("result");
+  }
+}
+
+/* ---------- рендер результатов ---------- */
+function render(){
+  var b=readBase();
+  if(b.area<=0){$("resCards").innerHTML="";$("advice").hidden=true;return null;}
+  var cur=applyScen(b,$("scenario").value);
+  var r=calcCore(b.area,cur.y,cur.p,cur.c);
+  ["pess","real","opt"].forEach(function(s){
+    var m=applyScen(b,s),rr=calcCore(b.area,m.y,m.p,m.c),el=$("sc-"+s);
+    el.textContent=fmt(rr.profit)+" руб.";
+    el.style.color=rr.profit>=0?"#15803d":"#b91c1c";
+  });
+  var cards=[
+    ["Валовый сбор",fmt2(r.prod)+" т",""],["Выручка",fmt(r.revenue)+" руб.",""],
+    ["Общие затраты",fmt(r.total)+" руб.",""],["Затраты на га",fmt(r.costHa)+" руб.",""],
+    ["Прибыль",fmt(r.profit)+" руб.",r.profit>=0?"pos":"neg"],
+    ["Прибыль на га",fmt(r.profitHa)+" руб.",r.profit>=0?"pos":"neg"],
+    ["Рентабельность",r.margin===null?"—":fmt2(r.margin)+"%",(r.margin||0)>=0?"pos":"neg"],
+    ["Себестоимость тонны",r.costTon===null?"—":fmt(r.costTon)+" руб.",""],
+    ["Безубыточность по урожайности",r.beYield===null?"—":fmt2(r.beYield)+" т/га",""],
+    ["Безубыточность по цене",r.bePrice===null?"—":fmt(r.bePrice)+" руб./т",""]
+  ];
+  $("resCards").innerHTML=cards.map(function(c){
+    return '<div class="res-card"><div class="t">'+c[0]+'</div><div class="v '+c[2]+'">'+c[1]+'</div></div>';
+  }).join("");
+  renderAdvice(r,b);
+  return r;
+}
+function renderAdvice(r,b){
+  var a=$("advice"),items=[],warn=false;
+  if(r.profit<0){warn=true;items.push("Убыток при выбранном сценарии: проверьте затраты, цену или культуру.");}
+  else if(r.margin!==null&&r.margin<10){warn=true;items.push("Рентабельность ниже 10% — запас прочности мал.");}
+  else if(r.margin!==null&&r.margin>=25){items.push("Рентабельность "+fmt2(r.margin)+"% — хороший запас прочности.");}
+  if(r.bePrice!==null&&b.p>0&&b.p<r.bePrice){warn=true;items.push("Цена ниже точки безубыточности ("+fmt(r.bePrice)+" руб./т).");}
+  if(r.beYield!==null&&b.y>0&&b.y<r.beYield){warn=true;items.push("Урожайность ниже точки безубыточности ("+fmt2(r.beYield)+" т/га).");}
+  items.push('Справка PDF подойдёт для банка и заявки на субсидию. Меры поддержки — в разделе <a href="subsidies.html">«Субсидии»</a>.');
+  a.className="advice"+(warn?" warn":"");
+  a.innerHTML="<strong>"+(warn?"Требует внимания":"Хорошие показатели")+"</strong><ul>"+items.map(function(i){return "<li>"+i+"</li>";}).join("")+"</ul>";
+  a.hidden=false;
+}
+
+/* ---------- сравнение по данным пользователя ---------- */
+function manualGet(){try{return JSON.parse(localStorage.getItem(CMP_MANUAL))||{};}catch(e){return{};}}
+function manualSet(v){localStorage.setItem(CMP_MANUAL,JSON.stringify(v));}
+var SRC_LABEL={mine:"мой расчёт",man:"вручную",ref:"справочник"};
+function cmpDataFor(k){
+  var f=getFields().filter(function(x){return x.crop===k;});
+  if(f.length){var x=f[f.length-1];return{k:k,y:Number(x.y)||0,p:Number(x.p)||0,c:Number(x.c)||0,src:"mine"};}
+  var m=manualGet()[k];
+  if(m)return{k:k,y:Number(m.y)||0,p:Number(m.p)||0,c:Number(m.c)||0,src:(m.src==="ref"?"ref":"man")};
+  return null;
+}
+function buildCmpChecks(){
+  var names=Object.keys(CROPS);
+  $("cmpCrops").innerHTML=names.map(function(k){
+    return '<label class="chk"><input type="checkbox" value="'+k+'">'+k+'</label>';
+  }).join("");
+  $("cmpF-crop").innerHTML=names.map(function(k){return '<option>'+k+'</option>';}).join("");
+}
+function checkedCrops(){
+  return Array.prototype.slice.call(document.querySelectorAll("#cmpCrops input:checked")).map(function(i){return i.value;});
+}
+function cmpCalc(){
+  var area=num("cmpArea");
+  if(area<=0){alert("Укажите площадь.");return;}
+  var sel=checkedCrops();
+  if(!sel.length){alert("Выберите хотя бы одну культуру.");return;}
+  var sc=$("cmpScenario").value;
+  var missing=sel.filter(function(k){return !cmpDataFor(k);});
+  var missBox=$("cmpMissing");
+  if(missing.length){
+    missBox.innerHTML=missing.map(function(k){
+      return '<div class="miss-row"><b>'+esc(k)+'</b>: нет ваших данных → '+
+        '<button class="btn btn-secondary" style="min-height:40px" data-act="man" data-crop="'+esc(k)+'">Добавить вручную</button>'+
+        '<button class="btn btn-secondary" style="min-height:40px" data-act="ref" data-crop="'+esc(k)+'">Справочные</button></div>';
+    }).join("");
+  }else{missBox.innerHTML="";}
+  var rows=sel.map(cmpDataFor).filter(Boolean).map(function(d){
+    var m=applyScen({y:d.y,p:d.p,c:d.c},sc);
+    var r=calcCore(area,m.y,m.p,m.c);
+    return{k:d.k,src:d.src,y:m.y,p:m.p,c:m.c,r:r};
+  });
+  var res=$("cmpResult");
+  if(!rows.length){res.hidden=true;return;}
+  $("cmpTable").innerHTML="<tr><th>Культура</th><th>Источник</th><th>Урожайность, т/га</th><th>Урожай, т</th><th>Цена, руб/т</th><th>Затраты/га</th><th>Выручка</th><th>Затраты</th><th>Прибыль</th><th>Рент.,%</th></tr>"+rows.map(function(x){
+    return "<tr><td>"+esc(x.k)+"</td><td class='src-"+x.src+"'>"+SRC_LABEL[x.src]+"</td><td>"+fmt2(x.y)+"</td><td>"+fmt2(x.r.prod)+"</td><td>"+fmt(x.p)+"</td><td>"+fmt(x.c)+"</td><td>"+fmt(x.r.revenue)+"</td><td>"+fmt(x.r.total)+"</td><td style='color:"+(x.r.profit>=0?"#15803d":"#b91c1c")+";font-weight:800'>"+fmt(x.r.profit)+"</td><td>"+(x.r.margin===null?"—":fmt2(x.r.margin))+"</td></tr>";
+  }).join("");
+  renderCharts(rows);
+  res.hidden=false;
+}
+$("cmpMissing").addEventListener("click",function(e){
+  var b=e.target.closest("button[data-act]");if(!b)return;
+  var k=b.dataset.crop;
+  if(b.dataset.act==="ref"){
+    var d=CROPS[k];
+    if(!d){alert("Для этой культуры нет справочных данных — добавьте вручную.");return;}
+    var m=manualGet();
+    m[k]={y:d.y,p:d.p,c:d.c.reduce(function(a,x){return a+x;},0),src:"ref"};
+    manualSet(m);
+    cmpCalc();
+  }else{
+    $("cmpF-crop").value=k;
+    $("cmpF-y").value="";$("cmpF-p").value="";$("cmpF-c").value="";
+    $("cmpForm").hidden=false;
+  }
+});
+$("cmpF-save").addEventListener("click",function(){
+  var k=$("cmpF-crop").value,y=num("cmpF-y"),p=num("cmpF-p"),c=num("cmpF-c");
+  if(y<=0||p<=0||c<=0){alert("Заполните урожайность, цену и затраты.");return;}
+  var m=manualGet();
+  m[k]={y:y,p:p,c:c,src:"man"};
+  manualSet(m);
+  $("cmpForm").hidden=true;
+  cmpCalc();
+});
+$("cmpF-cancel").addEventListener("click",function(){$("cmpForm").hidden=true;});
+function renderCharts(rows){
+  var metrics=[["Прибыль",function(x){return x.r.profit;}],["Выручка",function(x){return x.r.revenue;}],["Затраты",function(x){return x.r.total;}],["Рентабельность",function(x){return x.r.margin||0;}]];
+  $("cmpCharts").innerHTML=metrics.map(function(m){
+    var max=Math.max.apply(null,rows.map(function(x){return Math.abs(m[1](x));}).concat([1]));
+    return '<div class="chart-title">'+m[0]+'</div>'+rows.map(function(x){
+      var v=m[1](x),w=Math.round(Math.abs(v)/max*100);
+      return '<div class="bar-row"><div>'+esc(x.k)+'</div><div><div class="bar'+(v<0?" neg":"")+'" style="width:'+Math.max(w,2)+'%"></div></div><div class="bar-val">'+fmt(v)+'</div></div>';
+    }).join("");
+  }).join("");
+}
+function cmpPrint(){
+  var area=num("cmpArea"),sc=$("cmpScenario").value;
+  var rows=checkedCrops().map(cmpDataFor).filter(Boolean).map(function(d){
+    var m=applyScen({y:d.y,p:d.p,c:d.c},sc);
+    var r=calcCore(area,m.y,m.p,m.c);
+    return{name:d.k+" ("+SRC_LABEL[d.src]+")",area:area,y:m.y,unit:"т/га",p:m.p,c:m.c,revenue:r.revenue,total:r.total,profit:r.profit,margin:r.margin};
+  });
+  if(!rows.length||area<=0){alert("Сначала рассчитайте сравнение.");return;}
+  printRows(rows,"Сравнение культур (предварительное)");
+}
+
+/* ---------- печать и CSV ---------- */
+function printRows(rows,title){
+  var farm=esc($("farmName").value.trim()||"Хозяйство не указано")+(profileRegion?" · Регион: "+esc(profileRegion):"");
+  var html="<h2>"+title+"</h2><p>Хозяйство: "+farm+"</p><p>Дата: "+new Date().toLocaleDateString("ru-RU")+"</p>"+
+    "<table><tr><th>Поле/культура</th><th>Площадь, га</th><th>Урожайность</th><th>Цена, руб/т</th><th>Затраты/га</th><th>Выручка</th><th>Затраты</th><th>Прибыль</th><th>Рент.,%</th></tr>"+
+    rows.map(function(r){return "<tr><td>"+esc(r.name)+"</td><td>"+fmt2(r.area)+"</td><td>"+fmt2(r.y)+" "+(r.unit||"т/га")+"</td><td>"+fmt(r.p)+"</td><td>"+fmt(r.c)+"</td><td>"+fmt(r.revenue)+"</td><td>"+fmt(r.total)+"</td><td>"+fmt(r.profit)+"</td><td>"+(r.margin===null?"—":fmt2(r.margin))+"</td></tr>";}).join("")+
+    "</table><p style='margin-top:10px;font-size:11px'>Справка предварительная и не гарантирует фактическую прибыль.</p>";
+  $("print-report").innerHTML=html;
+  window.print();
+}
+function printCurrent(){
+  var b=readBase();if(b.area<=0){alert("Сначала выполните расчёт.");return;}
+  var r=render();
+  printRows([{name:($("fieldName").value||$("crop").value||"Расчёт"),area:b.area,y:b.y,unit:$("unit").value,p:b.p,c:b.c,revenue:r.revenue,total:r.total,profit:r.profit,margin:r.margin}],"Экономическая справка (предварительная)");
+}
+function printAllFields(){
+  var f=getFields();if(!f.length){alert("Нет сохранённых полей.");return;}
+  printRows(f.map(function(x){return{name:x.name,area:x.area,y:x.y,unit:x.unit,p:x.p,c:x.c,revenue:x.revenue,total:x.total,profit:x.profit,margin:x.margin};}),"Отчёт по полям хозяйства (предварительный)");
+}
+function exportCsv(){
+  var b=readBase();if(b.area<=0){alert("Сначала выполните расчёт.");return;}
+  var r=render();
+  var L=["\ufeffПоказатель;Значение","Хозяйство;"+($("farmName").value||""),"Поле;"+($("fieldName").value||""),
+    "Культура;"+($("crop").value||""),"Площадь, га;"+b.area,"Урожайность, т/га;"+b.y,"Цена, руб/т;"+b.p,
+    "Затраты на га, руб;"+b.c,"Валовый сбор, т;"+fmt2(r.prod),"Выручка, руб;"+Math.round(r.revenue),
+    "Общие затраты, руб;"+Math.round(r.total),"Прибыль, руб;"+Math.round(r.profit),
+    "Рентабельность, %;"+(r.margin===null?"":fmt2(r.margin))].join("\r\n");
+  var blob=new Blob([L],{type:"text/csv;charset=utf-8"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="agro-raschet.csv";a.click();
+}
+
+/* ---------- события ---------- */
+$("yieldVal").addEventListener("input",updateYieldConv);
+$("unit").addEventListener("change",updateYieldConv);
+$("btnCalc").addEventListener("click",doCalc);
+$("btnFillCosts").addEventListener("click",fillCosts);
+$("btnFromOps").addEventListener("click",fillFromOps);
+$("btnPriceRef").addEventListener("click",function(){
+  var crop=$("crop").value;
+  if(!crop||!activePrices[crop]){alert("Выберите культуру из списка.");return;}
+  $("price").value=activePrices[crop];
+  render();
+});
+$("btnSaveField").addEventListener("click",saveField);
+$("btnCsv").addEventListener("click",exportCsv);
+$("btnPrint").addEventListener("click",printCurrent);
+$("btnBackCalc").addEventListener("click",function(){go("calc");});
+$("btnNewCalc").addEventListener("click",function(){go("calc");});
+$("btnFieldsPrint").addEventListener("click",printAllFields);
+$("cmpAll").addEventListener("click",function(){document.querySelectorAll("#cmpCrops input").forEach(function(i){i.checked=true;});});
+$("cmpNone").addEventListener("click",function(){document.querySelectorAll("#cmpCrops input").forEach(function(i){i.checked=false;});});
+$("cmpCalc").addEventListener("click",cmpCalc);
+$("cmpPrint").addEventListener("click",cmpPrint);
+
+/* ---------- старт ---------- */
+$("kfh-year").textContent=new Date().getFullYear();
+buildCmpChecks();
+loadOpsForCrop($("opsCrop").value);
+$("farmName").value=localStorage.getItem(FARM_KEY)||"";
+renderFields();
+updateYieldConv();
+loadPrices();
+loadProfileIntoCalc();
+
+(async function initFields(){
+  if(supabaseReady()){
+    try{
+      var s=await sb().auth.getSession();
+      if(s.data.session){
+        currentUserId=s.data.session.user.id;
+        var r=await sb().from("my_fields").select("*").order("saved_at",{ascending:true});
+        if(!r.error&&r.data)fieldsCache=r.data;
+      }
+    }catch(e){}
+  }
+  renderFields();
+})();
+</script>
+
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

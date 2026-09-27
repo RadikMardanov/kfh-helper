@@ -1,0 +1,26 @@
+{
+  "name": "КФХ-Помощник",
+  "short_name": "КФХ",
+  "description": "Цифровой кабинет фермера: субсидии, экономика поля, погода и документы",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#e7efe9",
+  "theme_color": "#16a34a",
+  "lang": "ru",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

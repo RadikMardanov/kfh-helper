@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Кабинет фермера — КФХ-Помощник</title>
+<meta name="description" content="Утрення сводка фермера: понятные напоминания о дедлайнах с чек-листами, погода по полям, предупреждения о заморозках, дожде и ветре, субсидии и экономика поля." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--red:#b91c1c;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:760px;margin:0 auto;padding:14px 16px 30px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.top-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:10px 18px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-block{width:100%}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.morning{margin-top:14px;padding:20px 22px;background:linear-gradient(120deg,#14532d 0%,#178a46 60%,#3fae54 100%);border-radius:var(--radius-card);color:#fff;box-shadow:0 10px 26px rgba(15,23,42,.16)}
+.morning h1{font-size:24px;font-weight:900;margin:0}
+.morning .date{margin:4px 0 0;color:rgba(255,255,255,.85);font-size:15px}
+.reminder{margin-top:12px;padding:14px 16px;border-radius:14px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.14)}
+.reminder.red{background:rgba(220,38,38,.42)}
+.reminder.yellow{background:rgba(234,179,8,.34)}
+.reminder.green{background:rgba(255,255,255,.14)}
+.rem-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:16px}
+.rem-days{margin-left:auto;font-weight:900;font-size:15px;white-space:nowrap}
+.rem-sub{margin-top:4px;font-size:14px;color:rgba(255,255,255,.92)}
+.rem-btn{margin-top:10px;min-height:42px;padding:9px 16px;border:none;border-radius:12px;background:#fff;color:var(--green-deep);font-family:inherit;font-weight:800;font-size:15px;cursor:pointer}
+.rem-btn:hover{background:#f0fdf4}
+.alerts-box{margin-top:12px;padding:12px 14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.22);border-radius:12px}
+.alerts-title{font-weight:800;margin-bottom:8px;font-size:15px}
+.alert-item{padding:6px 10px;border-radius:8px;margin-bottom:6px;font-size:14px;background:rgba(255,255,255,.12)}
+.alert-item.red{background:rgba(220,38,38,.32)}
+.alert-item.yellow{background:rgba(234,179,8,.28)}
+.alert-item:last-child{margin-bottom:0}
+.fields-slider{display:flex;gap:12px;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity;margin-top:14px;padding:2px 2px 8px;min-height:140px;align-items:stretch}
+.field-card{flex:0 0 86%;max-width:320px;scroll-snap-align:start;background:#fff;color:var(--ink);border-radius:var(--radius-inner);padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.08);display:flex;flex-direction:column;justify-content:flex-start}
+.field-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.field-name{font-weight:800;font-size:16px}
+.field-del{background:#fff;border:1px solid #fecaca;color:#b91c1c;border-radius:8px;width:30px;height:30px;cursor:pointer;font-weight:700}
+.field-main{font-size:26px;font-weight:900;margin-top:8px}
+.field-sub{color:var(--muted);font-size:14px;margin-top:2px}
+.field-warn{margin-top:10px;padding:8px 10px;background:var(--amber-soft);border:1px solid var(--amber-border);border-radius:8px;font-size:13px;color:#7c4a03}
+.slider-dots{display:flex;justify-content:center;gap:6px;margin-top:6px;min-height:10px}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.4)}
+.dot.active{background:#fff}
+.empty-hint{flex:1;text-align:center;padding:20px;background:rgba(255,255,255,.12);border-radius:var(--radius-inner);color:rgba(255,255,255,.9);font-size:15px;display:flex;align-items:center;justify-content:center}
+.add-field-link{margin-top:12px;background:rgba(255,255,255,.16);border:1px dashed rgba(255,255,255,.5);color:#fff;border-radius:12px;min-height:44px;width:100%;font-weight:700;cursor:pointer;font-size:15px}
+/* две плитки ВСЕГДА в одну линию */
+.modules-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:16px}
+.module-big{padding:18px 14px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);font-weight:800;font-size:17px;color:var(--ink);display:flex;flex-direction:column;gap:6px;align-items:flex-start;transition:160ms ease;box-shadow:var(--shadow-card);text-align:left}
+.module-big:hover{transform:translateY(-2px);border-color:rgba(22,163,74,.5)}
+.module-big .ico{font-size:26px}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal[hidden]{display:none}
+.modal-card{width:100%;max-width:560px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:22px;padding:22px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.modal-head h2{margin:0;font-size:20px;font-weight:900;color:var(--green-deep)}
+.modal-close{min-width:40px;height:40px;border-radius:10px;border:1px solid #d3d9df;background:#fff;font-size:17px;font-weight:800;cursor:pointer}
+.prep-list{margin:10px 0 0;padding-left:20px;color:var(--ink);font-size:15px}
+.prep-list li{margin-bottom:8px}
+.candidate{display:block;width:100%;text-align:left;padding:12px 14px;margin-top:8px;background:#fff;border:1px solid var(--inner-border);border-radius:10px;font-size:15px;font-weight:700;cursor:pointer}
+.candidate:hover{border-color:var(--green)}
+.cand-region{display:block;color:var(--muted);font-weight:500;font-size:13px;margin-top:2px}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+@media (max-width:520px){
+  .field-card{flex:0 0 90%}
+  .fields-slider{min-height:150px}
+  .module-big{font-size:15px;padding:14px 12px;min-height:96px}
+  .module-big .ico{font-size:24px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <div class="top-brand">🌱 КФХ-Помощник</div>
+    <button class="btn btn-secondary" id="logout-btn">Выйти</button>
+  </div>
+
+  <section class="morning">
+    <h1 id="greeting">Доброе утро!</h1>
+    <p class="date" id="today-date"></p>
+
+    <div class="reminder" id="reminder" hidden>
+      <div class="rem-head"><span id="rem-icon">⏰</span> <b id="rem-title"></b> <span class="rem-days" id="rem-days"></span></div>
+      <div class="rem-sub" id="rem-sub"></div>
+      <button class="rem-btn" id="rem-prepare" type="button">📋 Что подготовить</button>
+    </div>
+
+    <div class="alerts-box" id="alerts-box" hidden></div>
+
+    <div class="fields-slider" id="fields-slider"></div>
+    <div class="slider-dots" id="slider-dots"></div>
+    <button class="add-field-link" id="add-field-btn">+ Добавить поле (погода по нему)</button>
+  </section>
+
+  <div class="modules-row">
+    <a class="module-big" href="subsidies.html"><span class="ico">🌾</span> Субсидии и гранты</a>
+    <a class="module-big" href="economy.html"><span class="ico">📊</span> Экономика поля</a>
+  </div>
+
+  <div class="btn-row">
+    <button class="btn btn-secondary btn-block" id="more-btn">⋯ Ещё разделы</button>
+  </div>
+
+  <div class="footer">
+    <p>© <span id="year"></span> КФХ-Помощник · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p style="margin-top:4px">Погода — wttr.in по координатам поля (резерв: Open-Meteo); поиск населённых пунктов — OpenStreetMap.</p>
+  </div>
+</div>
+
+<!-- МОДАЛКА: ЧТО ПОДГОТОВИТЬ -->
+<div class="modal" id="prep-modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2 id="prep-title">Что подготовить</h2>
+      <button class="modal-close" id="prep-close" type="button">✕</button>
+    </div>
+    <ul class="prep-list" id="prep-list"></ul>
+    <div class="btn-row" id="prep-links"></div>
+  </div>
+</div>
+
+<!-- МОДАЛКА ДОБАВЛЕНИЯ ПОЛЯ -->
+<div class="modal" id="field-modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>Добавить поле</h2>
+      <button class="modal-close" id="field-close" type="button">✕</button>
+    </div>
+    <label class="label">Название поля</label>
+    <input class="input" id="f-name" placeholder="Поле №1 у Ивановки">
+    <label class="label">Ближайший населённый пункт</label>
+    <input class="input" id="f-place" placeholder="Ивановка">
+    <p class="hint">Система найдёт координаты по любому населённому пункту России. Если найдётся несколько — выберите нужный из списка.</p>
+    <div class="btn-row"><button class="btn btn-primary" id="f-search">Найти</button></div>
+    <div id="f-candidates"></div>
+  </div>
+</div>
+
+<script src="profile-link.js"></script>
+<script src="ui.js"></script>
+<script>
+var SESSION_KEY="kfh_helper_demo_session_v1";
+var CAL_KEY="kfh_calendar_v1";
+var FIELDS_KEY="kfh_farm_fields_v1";
+function $(id){return document.getElementById(id);}
+$("year").textContent=new Date().getFullYear();
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+function sb(){return window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);}
+function localArr(k){try{var a=JSON.parse(localStorage.getItem(k));return Array.isArray(a)?a:[];}catch(e){return[];}}
+function todayISO(){return new Date().toISOString().split("T")[0];}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function daysUntil(iso){return Math.round((new Date(iso+"T00:00:00")-new Date(todayISO()+"T00:00:00"))/86400000);}
+function fmtDateLong(iso){
+  if(!iso)return "";
+  var d=new Date(iso+"T00:00:00");
+  if(isNaN(d))return iso;
+  return d.toLocaleDateString("ru-RU",{day:"numeric",month:"long",year:"numeric"});
+}
+var SB_OK=supabaseReady();
+var currentUserId=null;
+var currentFields=[];
+
+/* ---------- дата и приветствие ---------- */
+function setDate(){
+  var d=new Date();
+  $("today-date").textContent=d.toLocaleDateString("ru-RU",{weekday:"long",day:"numeric",month:"long"});
+}
+async function loadGreeting(){
+  var h=new Date().getHours();
+  var part=h<5?"Доброй ночи":(h<12?"Доброе утро":(h<18?"Добрый день":"Добрый вечер"));
+  var farm="";
+  if(window.KFHProfile){try{var p=await KFHProfile.get();if(p&&p.farm_name)farm=p.farm_name;}catch(e){}}
+  $("greeting").textContent=part+(farm?", "+farm:"")+"!";
+}
+
+/* =========================================================
+   НАПОМИНАНИЯ: понятные категории вместо технических кодов
+   ========================================================= */
+var CAT_LABELS={
+ "tax":"Налоги","taxes":"Налоги","налоги":"Налоги",
+ "subs":"Субсидии","subsidies":"Субсидии","субсидии":"Субсидии",
+ "rep":"Отчётность","reports":"Отчётность","отчётность":"Отчётность",
+ "vet":"Ветеринария","veterinary":"Ветеринария","ветеринария":"Ветеринария",
+ "hr":"Кадры","workers":"Кадры","кадры":"Кадры",
+ "check":"Проверки","проверки":"Проверки",
+ "land":"Земля","земля":"Земля",
+ "credit":"Кредиты","кредиты":"Кредиты",
+ "other":"Другое","другое":"Другое",
+ "own":"Своё","своё":"Своё",
+ "Налоги":"Налоги","Субсидии":"Субсидии","Отчётность":"Отчётность","Ветеринария":"Ветеринария","Кадры":"Кадры","Проверки":"Проверки","Земля":"Земля","Кредиты":"Кредиты","Другое":"Другое","Своё":"Своё"
+};
+var CAT_ICONS={
+ "Налоги":"💰","Субсидии":"🌾","Отчётность":"📑","Ветеринария":"🐄",
+ "Кадры":"🧾","Проверки":"🔎","Земля":"🗺️","Кредиты":"🏦","Другое":"📌","Своё":"📌"
+};
+function catLabel(c){
+  if(!c)return "Другое";
+  return CAT_LABELS[c]||CAT_LABELS[String(c).toLowerCase()]||"Другое";
+}
+
+var PREP_CHECKLISTS={
+ "Субсидии":["Выписка из ЕГРИП/ЕГРЮЛ","Справка ФНС об отсутствии задолженности","Документы на землю / животных / технику","Коммерческие предложения на планируемые покупки","Реквизиты счёта для перечисления","Отчётность по формам АПК (если требуется мерой)","Согласие на обработку персональных данных"],
+ "Налоги":["Проверьте начисления и авансы в личном кабинете ФНС","Подготовьте платёжные документы","Сверьте доходы и расходы за период (для ЕСХН)","Проверьте календарь платежей до конца года"],
+ "Отчётность":["Уточните актуальную форму отчёта (АПК-2 и др.)","Соберите первичные документы за период","Проверьте подписи и должности в форме"],
+ "Ветеринария":["Идентификация животных в ВетИС","эВСД в «Меркурии» на объём отгрузки","Ветеринарные справки и лабораторные исследования"],
+ "Кадры":["Трудовые договоры и приказы по работникам","Уведомления МВД (если есть иностранные работники)","Табели и расчётные листки"],
+ "Проверки":["Удостоверение и приказ проверяющих — запросить копии","Акты с вашими замечаниями и возражениями","Документы по предмету проверки из архива"],
+ "Земля":["Выписка ЕГРН и документы на участки","Договоры аренды/субаренды с актами","Кадастровые планы при споре о границах"],
+ "Кредиты":["Финансовые показатели хозяйства (справка из «Экономики поля»)","Документы на залог из архива","План целевого использования кредита"],
+ "Другое":["Уточните требования в официальном уведомлении","Подготовьте копии документов по теме события","Заложите запас времени на подачу или отправку"],
+ "Своё":["Уточните требования в официальном уведомлении","Подготовьте копии документов по теме события","Заложите запас времени на подачу или отправку"]
+};
+var PREP_LINKS={
+ "Субсидии":[["subsidies.html","🌾 Меры и соответствие"],["archive.html","🗂 Архив документов"]],
+ "Налоги":[["archive.html","🗂 Архив документов"],["request.html","✉️ Спросить специалиста"]],
+ "Отчётность":[["archive.html","🗂 Архив документов"],["request.html","✉️ Спросить специалиста"]],
+ "Ветеринария":[["archive.html","🗂 Архив документов"],["request.html","✉️ Спросить специалиста"]],
+ "Кадры":[["hr.html","🧾 Кадровые документы"],["archive.html","🗂 Архив документов"]],
+ "Проверки":[["legal.html","⚖️ Ответы на предписания"],["archive.html","🗂 Архив документов"]],
+ "Земля":[["legal.html","⚖️ Юридический помощник"],["archive.html","🗂 Архив документов"]],
+ "Кредиты":[["economy.html","📊 Справка по экономике"],["archive.html","🗂 Архив документов"]],
+ "Другое":[["request.html","✉️ Спросить специалиста"]],
+ "Своё":[["request.html","✉️ Спросить специалиста"]]
+};
+
+async function getNearestEvent(){
+  var today=todayISO();
+  if(SB_OK&&currentUserId){
+    try{
+      var r=await sb().from("calendar_events").select("title,event_date,category").eq("user_id",currentUserId).gte("event_date",today).order("event_date",{ascending:true}).limit(1);
+      if(r.data&&r.data.length)return{title:r.data[0].title,date:r.data[0].event_date,category:r.data[0].category};
+      var p=await sb().from("calendar_events").select("title,event_date,category").eq("user_id",currentUserId).lt("event_date",today).order("event_date",{ascending:false}).limit(1);
+      if(p.data&&p.data.length)return{title:p.data[0].title,date:p.data[0].event_date,category:p.data[0].category};
+    }catch(e){}
+    return null;
+  }
+  var cal=localArr(CAL_KEY);
+  var up=cal.filter(function(x){return(x.date||"")>=today;}).sort(function(a,b){return(a.date||"").localeCompare(b.date||"");});
+  if(up.length)return{title:up[0].title,date:up[0].date,category:up[0].category};
+  var late=cal.filter(function(x){return(x.date||"")<today;}).sort(function(a,b){return(b.date||"").localeCompare(a.date||"");});
+  if(late.length)return{title:late[0].title,date:late[0].date,category:late[0].category};
+  return null;
+}
+
+function renderReminder(ev){
+  var box=$("reminder");
+  if(!ev){box.hidden=true;return;}
+  var days=daysUntil(ev.date);
+  var level=days<=7?"red":(days<=14?"yellow":"green");
+  var icon=days<0?"🚨":(days<=7?"🔴":(days<=14?"🟡":""));
+  var txt=days<0?("просрочено на "+Math.abs(days)+" дн."):(days===0?"сегодня!":(days===1?"завтра":"через "+days+" дн."));
+  var label=catLabel(ev.category);
+  box.hidden=false;
+  box.className="reminder "+level;
+  $("rem-icon").textContent=icon;
+  $("rem-title").textContent=ev.title;
+  $("rem-days").textContent=txt;
+  $("rem-sub").textContent="Срок: до "+fmtDateLong(ev.date)+" · "+(CAT_ICONS[label]||"📌")+" "+label;
+  window._remCategory=label;
+}
+
+$("rem-prepare").addEventListener("click",function(){
+  var cat=window._remCategory||"Другое";
+  var list=PREP_CHECKLISTS[cat]||PREP_CHECKLISTS["Другое"];
+  $("prep-title").textContent="Что подготовить: "+cat;
+  $("prep-list").innerHTML=list.map(function(x){return "<li>"+esc(x)+"</li>";}).join("");
+  var links=PREP_LINKS[cat]||PREP_LINKS["Другое"];
+  $("prep-links").innerHTML=links.map(function(l){return '<a class="btn btn-secondary btn-wrap" style="min-height:42px" href="'+l[0]+'">'+l[1]+"</a>";}).join("");
+  $("prep-modal").hidden=false;
+});
+$("prep-close").addEventListener("click",function(){$("prep-modal").hidden=true;});
+$("prep-modal").addEventListener("click",function(e){if(e.target===this)this.hidden=true;});
+
+/* ---------- хранение полей ---------- */
+function fieldKey(f){return f.name+"|"+f.lat+"|"+f.lon;}
+
+async function loadFields(){
+  var local=localArr(FIELDS_KEY);
+  var seen={},deduped=[];
+  local.forEach(function(f){var k=fieldKey(f);if(!seen[k]){seen[k]=1;deduped.push(f);}});
+  var result=deduped.slice();
+  var keys=result.map(fieldKey);
+  if(SB_OK&&currentUserId){
+    try{
+      var r=await sb().from("farm_fields").select("*").eq("user_id",currentUserId).order("created_at");
+      if(!r.error&&r.data){
+        r.data.forEach(function(f){
+          var k=fieldKey(f);
+          if(keys.indexOf(k)<0){result.push(f);keys.push(k);}
+        });
+      }else if(r.error)console.warn("Ошибка чтения полей:",r.error.message);
+    }catch(e){console.warn("Исключение при чтении полей:",e);}
+  }
+  console.log("[KFH] Загружено полей:",result.length);
+  return result;
+}
+
+async function saveFieldDb(f){
+  if(f.id==null)f.id=Date.now();
+  var local=localArr(FIELDS_KEY);
+  local.push(f);
+  localStorage.setItem(FIELDS_KEY,JSON.stringify(local));
+  if(SB_OK&&currentUserId){
+    try{
+      var res=await sb().from("farm_fields").insert({user_id:currentUserId,name:f.name,place_name:f.place,lat:f.lat,lon:f.lon});
+      if(res.error)console.warn("Ошибка вставки поля:",res.error.message);
+    }catch(e){console.warn("Исключение при вставке поля:",e);}
+  }
+  console.log("[KFH] Поле сохранено:",f.name);
+}
+
+async function deleteField(f){
+  if(SB_OK&&currentUserId){
+    try{
+      await sb().from("farm_fields").delete()
+        .eq("user_id",currentUserId).eq("name",f.name).eq("lat",f.lat).eq("lon",f.lon);
+    }catch(e){}
+  }
+  var arr=localArr(FIELDS_KEY).filter(function(x){return fieldKey(x)!==fieldKey(f);});
+  localStorage.setItem(FIELDS_KEY,JSON.stringify(arr));
+}
+
+/* ---------- погода: wttr.in → Open-Meteo ---------- */
+function withTimeout(p,ms){
+  return new Promise(function(res,rej){
+    var t=setTimeout(function(){rej(new Error("timeout "+ms+"ms"));},ms);
+    p.then(function(v){clearTimeout(t);res(v);},function(e){clearTimeout(t);rej(e);});
+  });
+}
+function wttrCodeToWmo(c){
+  c=Number(c);
+  if(c===113)return 0;
+  if(c===116)return 2;
+  if(c===119||c===122)return 3;
+  if(c===143||c===248||c===260)return 45;
+  if(c===200||c===386||c===392)return 95;
+  if(c===389||c===395)return 96;
+  if([176,263,266,281,284,293,296,299,302,305,308,353,356,359].indexOf(c)>=0)return 61;
+  if([179,182,185,227,230,323,326,329,332,335,338,368,371,374,377].indexOf(c)>=0)return 71;
+  return 3;
+}
+async function fetchWttr(lat,lon){
+  var url="https://wttr.in/"+lat+","+lon+"?format=j1";
+  var r=await fetch(url,{headers:{"Accept":"application/json"}});
+  if(!r.ok)throw new Error("wttr http "+r.status);
+  var j=await r.json();
+  var cc=j.current_condition&&j.current_condition[0];
+  if(!cc||!j.weather||!j.weather.length)throw new Error("wttr empty");
+  var days=j.weather.slice(0,2);
+  var daily={weather_code:[],temperature_2m_max:[],temperature_2m_min:[],precipitation_sum:[],precipitation_probability_max:[],wind_speed_10m_max:[]};
+  days.forEach(function(d){
+    var hourly=d.hourly||[];
+    var precip=0,prob=0,wind=0,noonCode=null;
+    hourly.forEach(function(h){
+      precip+=Number(h.precipMM)||0;
+      var p=Number(h.chanceofrain)||0;if(p>prob)prob=p;
+      var w=(Number(h.windspeedKmph)||0)/3.6;if(w>wind)wind=w;
+      if(String(h.time)==="1200")noonCode=h.weatherCode;
+    });
+    if(noonCode==null&&hourly.length)noonCode=hourly[Math.floor(hourly.length/2)].weatherCode;
+    daily.weather_code.push(wttrCodeToWmo(noonCode));
+    daily.temperature_2m_max.push(Number(d.maxtempC));
+    daily.temperature_2m_min.push(Number(d.mintempC));
+    daily.precipitation_sum.push(Math.round(precip*10)/10);
+    daily.precipitation_probability_max.push(prob);
+    daily.wind_speed_10m_max.push(Math.round(wind*10)/10);
+  });
+  return {
+    provider:"wttr.in",
+    current:{
+      temperature_2m:Number(cc.temp_C),
+      weather_code:wttrCodeToWmo(cc.weatherCode),
+      wind_speed_10m:Math.round((Number(cc.windspeedKmph)/3.6)*10)/10
+    },
+    daily:daily
+  };
+}
+async function fetchOpenMeteo(lat,lon){
+  var url="https://api.open-meteo.com/v1/forecast?latitude="+lat+"&longitude="+lon
+    +"&current=temperature_2m,weather_code,wind_speed_10m"
+    +"&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_speed_10m_max"
+    +"&timezone=auto&wind_speed_unit=ms&forecast_days=2";
+  var r=await fetch(url);
+  if(!r.ok)throw new Error("open-meteo http "+r.status);
+  var d=await r.json();
+  d.provider="open-meteo";
+  return d;
+}
+async function fetchWeather(lat,lon){
+  try{
+    return await withTimeout(fetchWttr(lat,lon),10000);
+  }catch(e1){
+    console.warn("[KFH] wttr.in недоступен, переключаюсь на Open-Meteo:",e1&&e1.message);
+    return await withTimeout(fetchOpenMeteo(lat,lon),8000);
+  }
+}
+function weatherEmoji(c){
+  if(c===0)return"☀️";if(c<=2)return"🌤";if(c===3)return"☁️";
+  if(c===45||c===48)return"🌫";if(c>=51&&c<=57)return"🌦";
+  if(c>=61&&c<=67)return"🌧";if(c>=71&&c<=77)return"🌨";
+  if(c>=80&&c<=82)return"🌦";if(c===95)return"⛈";if(c===96||c===99)return"🌩";
+  return"🌥";
+}
+function getWarnings(d,i){
+  var w=[];
+  var tmin=d.temperature_2m_min[i],tmax=d.temperature_2m_max[i];
+  var precip=d.precipitation_sum[i];
+  var prob=(d.precipitation_probability_max&&d.precipitation_probability_max[i]!=null)?d.precipitation_probability_max[i]:null;
+  var wind=d.wind_speed_10m_max[i],code=d.weather_code[i];
+  if(tmin<=0)w.push({level:"red",icon:"❄️",text:"Заморозки до "+Math.round(tmin)+"°"});
+  else if(tmin<=2)w.push({level:"yellow",icon:"⚠️",text:"Риск заморозков (до +"+Math.round(tmin)+"°)"});
+  var storm=(code===95||code===96||code===99);
+  if(code===96||code===99)w.push({level:"red",icon:"🌩",text:"Гроза с градом"});
+  else if(code===95)w.push({level:"yellow",icon:"⛈",text:"Гроза"});
+  if(!storm){
+    if(precip>=10)w.push({level:"red",icon:"🔴",text:"Ливень ~"+Math.round(precip)+" мм"});
+    else if(precip>=1||(prob!==null&&prob>=60))w.push({level:"yellow",icon:"🌧",text:"Дождь"+(prob!==null?" (вероятность "+Math.round(prob)+"%)":"")});
+  }
+  if(wind>=12)w.push({level:"yellow",icon:"💨",text:"Сильный ветер "+Math.round(wind)+" м/с"});
+  if(tmax>=35)w.push({level:"red",icon:"🔥",text:"Сильная жара +"+Math.round(tmax)+"°"});
+  else if(tmax>=30)w.push({level:"yellow",icon:"🌡",text:"Жара +"+Math.round(tmax)+"°"});
+  return w;
+}
+function renderFieldCard(f,cur,d,warns,idx){
+  var tmin=Math.round(d.temperature_2m_min[0]),tmax=Math.round(d.temperature_2m_max[0]);
+  var curT=Math.round(cur.temperature_2m),emoji=weatherEmoji(cur.weather_code);
+  var precip=d.precipitation_sum[0],wind=Math.round(cur.wind_speed_10m);
+  var precipText=precip>=1?"осадки ~"+Math.round(precip)+" мм":"без осадков";
+  var warnHtml=warns.length?'<div class="field-warn">'+warns.map(function(x){return x.icon+" "+esc(x.text);}).join("<br>")+"</div>":"";
+  return '<div class="field-card">'
+    +'<div class="field-head"><span class="field-name">🌾 '+esc(f.name)+'</span><button class="field-del" data-idx="'+idx+'" title="Удалить">✕</button></div>'
+    +'<div class="field-main">'+emoji+" "+curT+'° <span class="field-sub">мин '+tmin+"° / макс "+tmax+'°</span></div>'
+    +'<div class="field-sub">💧 '+precipText+" · 💨 "+wind+' м/с</div>'
+    +warnHtml+"</div>";
+}
+function renderFieldCardError(f,idx){
+  return '<div class="field-card">'
+    +'<div class="field-head"><span class="field-name">🌾 '+esc(f.name)+'</span><button class="field-del" data-idx="'+idx+'" title="Удалить">✕</button></div>'
+    +'<div class="field-sub">⚠️ Сервисы погоды недоступны.<br>Проверьте интернет или обновите страницу позже.</div>'
+    +'</div>';
+}
+
+async function renderFieldsWeather(fields){
+  currentFields=fields;
+  var slider=$("fields-slider"),dots=$("slider-dots"),alertsBox=$("alerts-box");
+  if(!fields.length){
+    slider.innerHTML='<div class="empty-hint">Добавьте первое поле, чтобы видеть погоду и предупреждения по нему.</div>';
+    dots.innerHTML="";alertsBox.hidden=true;return;
+  }
+  var allAlerts=[],cardsHtml="";
+  for(var i=0;i<fields.length;i++){
+    var f=fields[i];
+    try{
+      var w=await fetchWeather(f.lat,f.lon);
+      var warns=getWarnings(w.daily,0);
+      console.log("[KFH] Погода для",f.name,"через",w.provider);
+      cardsHtml+=renderFieldCard(f,w.current,w.daily,warns,i);
+      warns.forEach(function(x){allAlerts.push({field:f.name,level:x.level,icon:x.icon,text:x.text});});
+    }catch(e){
+      console.warn("[KFH] Оба канала погоды не ответили для",f.name,":",e&&e.message);
+      cardsHtml+=renderFieldCardError(f,i);
+    }
+  }
+  slider.innerHTML=cardsHtml;
+  dots.innerHTML=fields.map(function(_,i){return '<span class="dot'+(i===0?" active":"")+'"></span>';}).join("");
+  if(allAlerts.length){
+    allAlerts.sort(function(a,b){return(a.level==="red"?0:1)-(b.level==="red"?0:1);});
+    alertsBox.hidden=false;
+    alertsBox.innerHTML='<div class="alerts-title">⚠️ Сегодня внимание</div>'+allAlerts.map(function(a){
+      return '<div class="alert-item '+a.level+'">'+a.icon+" <b>"+esc(a.field)+":</b> "+esc(a.text)+"</div>";
+    }).join("");
+  }else{alertsBox.hidden=true;}
+  bindFieldDelete();bindSliderDots();
+}
+function bindFieldDelete(){
+  document.querySelectorAll(".field-del").forEach(function(b){
+    b.addEventListener("click",async function(){
+      if(!confirm("Удалить это поле?"))return;
+      var idx=parseInt(b.dataset.idx);
+      var f=currentFields[idx];
+      if(!f)return;
+      await deleteField(f);
+      await refreshFields();
+    });
+  });
+}
+function bindSliderDots(){
+  var slider=$("fields-slider"),dots=document.querySelectorAll("#slider-dots .dot");
+  slider.addEventListener("scroll",function(){
+    var idx=Math.round(slider.scrollLeft/slider.clientWidth);
+    dots.forEach(function(d,i){d.classList.toggle("active",i===idx);});
+  });
+}
+async function refreshFields(){var f=await loadFields();await renderFieldsWeather(f);}
+
+/* ---------- геокодинг и добавление поля ---------- */
+async function geocodeNominatim(name){
+  var url="https://nominatim.openstreetmap.org/search?format=jsonv2&limit=5&accept-language=ru&q="+encodeURIComponent(name);
+  var r=await fetch(url,{headers:{"Accept":"application/json"}});
+  if(!r.ok)throw new Error("nominatim http "+r.status);
+  var d=await r.json();
+  return (d||[]).map(function(x){
+    var parts=String(x.display_name||"").split(", ");
+    return {name:x.name||parts[0]||name,label:parts.slice(1,4).join(", "),lat:Number(x.lat),lon:Number(x.lon)};
+  });
+}
+async function geocodePhoton(name){
+  var url="https://photon.komoot.io/api/?limit=5&q="+encodeURIComponent(name);
+  var r=await fetch(url);
+  if(!r.ok)throw new Error("photon http "+r.status);
+  var d=await r.json();
+  return (d.features||[]).map(function(ft){
+    var p=ft.properties||{};
+    var coords=(ft.geometry&&ft.geometry.coordinates)||[0,0];
+    var label=[p.county,p.state,p.country].filter(Boolean).join(", ");
+    return {name:p.name||name,label:label,lat:Number(coords[1]),lon:Number(coords[0])};
+  });
+}
+async function geocode(name){
+  try{
+    var res=await geocodeNominatim(name);
+    if(res.length)return res;
+    return await geocodePhoton(name);
+  }catch(e){
+    console.warn("[KFH] Nominatim недоступен, пробую Photon:",e&&e.message);
+    return await geocodePhoton(name);
+  }
+}
+$("add-field-btn").addEventListener("click",function(){
+  $("field-modal").hidden=false;$("f-name").value="";$("f-place").value="";$("f-candidates").innerHTML="";
+});
+$("field-close").addEventListener("click",function(){$("field-modal").hidden=true;});
+$("f-search").addEventListener("click",async function(){
+  var place=$("f-place").value.trim();
+  if(!place){alert("Введите населённый пункт.");return;}
+  $("f-candidates").innerHTML='<p class="hint">Ищем…</p>';
+  try{
+    var res=await geocode(place);
+    if(!res.length){
+      $("f-candidates").innerHTML='<p class="hint">Не найдено. Уточните название (например, добавьте район или ближайший город).</p>';
+      return;
+    }
+    if(res.length===1){
+      var r=res[0];
+      var name=$("f-name").value.trim()||r.name;
+      await saveFieldDb({name:name,place:r.name,lat:r.lat,lon:r.lon});
+      $("field-modal").hidden=true;
+      await refreshFields();
+      return;
+    }
+    window._geoCandidates=res;
+    $("f-candidates").innerHTML=res.map(function(r,i){
+      return '<button class="candidate" data-i="'+i+'">'+esc(r.name)+(r.label?'<span class="cand-region">'+esc(r.label)+"</span>":"")+"</button>";
+    }).join("");
+    document.querySelectorAll(".candidate").forEach(function(b){
+      b.addEventListener("click",function(){selectCandidate(parseInt(b.dataset.i));});
+    });
+  }catch(e){
+    $("f-candidates").innerHTML='<p class="hint">Ошибка поиска. Попробуйте ещё раз.</p>';
+  }
+});
+async function selectCandidate(i){
+  var r=window._geoCandidates[i];
+  var name=$("f-name").value.trim()||r.name;
+  await saveFieldDb({name:name,place:r.name,lat:r.lat,lon:r.lon});
+  $("field-modal").hidden=true;
+  await refreshFields();
+}
+
+/* ---------- ЕДИНАЯ шторка «Ещё» (плитки из ui.js) ---------- */
+$("more-btn").addEventListener("click",function(){
+  if(window.KFH&&KFH.openSheet)KFH.openSheet();
+});
+
+/* ---------- выход ---------- */
+$("logout-btn").addEventListener("click",async function(){
+  if(SB_OK){try{await sb().auth.signOut();}catch(e){}}
+  else{localStorage.removeItem(SESSION_KEY);}
+  location.href="login.html";
+});
+
+/* ---------- старт ---------- */
+(async function init(){
+  try{
+    if(SB_OK){
+      var s=await sb().auth.getSession();
+      if(!s.data.session){location.href="login.html";return;}
+      currentUserId=s.data.session.user.id;
+    }else{
+      if(!localStorage.getItem(SESSION_KEY)){location.href="login.html";return;}
+    }
+    setDate();
+    await loadGreeting();
+    var ev=await getNearestEvent();
+    renderReminder(ev);
+    var fields=await loadFields();
+    await renderFieldsWeather(fields);
+  }catch(e){
+    console.error("[KFH] Ошибка инициализации кабинета:",e);
+    var slider=$("fields-slider");
+    if(slider)slider.innerHTML='<div class="empty-hint">Произошла ошибка загрузки. Обновите страницу.</div>';
+  }
+})();
+</script>
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js").then(function(reg){reg.update();}).catch(function(){});
+  });
+}
+</script>
+</body>
+</html>

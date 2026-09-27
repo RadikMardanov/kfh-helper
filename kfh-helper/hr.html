@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Кадровые документы — КФХ-Помощник</title>
+<meta name="description" content="Кадровые документы для КФХ: пакет «Сезонник» (5 документов одной кнопкой), генератор из 12 кадровых шаблонов с автозаполнением по ИНН, частые вопросы." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--red:#b91c1c;--amber:#92610e;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input,.select{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus,.select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.warn-box{margin-top:12px;padding:13px 16px;background:var(--amber-soft);border:1px solid var(--amber-border);border-left:5px solid #eab308;border-radius:12px;color:#6d4d10;font-size:15px}
+.preview{margin-top:14px;padding:18px;background:#fff;border:1px solid var(--inner-border);border-radius:12px;white-space:pre-wrap;font-size:14px;max-height:60vh;overflow-y:auto}
+.acc{background:#fff;border:1px solid var(--inner-border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.acc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:15px 16px;background:none;border:none;font:inherit;font-weight:700;font-size:16px;color:var(--ink);cursor:pointer;text-align:left}
+.acc-head:hover{background:#f6faf7}
+.plus{width:28px;height:28px;border-radius:8px;background:var(--green-soft);color:var(--green-dark);display:grid;place-items:center;font-weight:900;flex-shrink:0}
+.acc-body{display:none;padding:0 16px 16px;color:var(--muted);font-size:15px}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+.season-card{margin-top:14px;padding:20px 22px;border-radius:var(--radius-card);color:#fff;background:linear-gradient(100deg,#14532d 0%,#178a46 60%,#7cc31c 100%)}
+.season-card h2{font-size:21px;font-weight:900;margin:0 0 6px}
+.season-card p{margin:0 0 14px;color:rgba(255,255,255,.94);font-size:15px}
+.season-btn{display:inline-flex;align-items:center;min-height:48px;padding:11px 20px;border-radius:12px;background:#fff;color:var(--green-deep);border:none;font-family:inherit;font-size:16px;font-weight:800;cursor:pointer}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:80;display:flex;align-items:center;justify-content:center;padding:16px}
+.modal[hidden]{display:none}
+.modal-card{width:100%;max-width:640px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:22px;padding:22px}
+.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.modal-head h2{margin:0;font-size:22px;font-weight:900;color:var(--green-deep)}
+.modal-close{min-width:42px;height:42px;border-radius:10px;border:1px solid #d3d9df;background:#fff;font-size:18px;font-weight:800;cursor:pointer}
+.modal-sub{color:var(--muted);font-size:14px;margin:0 0 14px}
+@media (max-width:640px){.card{padding:16px 14px}.grid-2{grid-template-columns:1fr}.btn-row .btn{flex:1 1 100%;white-space:normal;text-align:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <section class="biz-card">
+    <h1>🧾 Кадровые документы</h1>
+    <p>Пакет «Сезонник» — 5 документов одной кнопкой. Генератор из 12 кадровых шаблонов с реквизитами. Реквизиты хозяйства подставляются сами.</p>
+  </section>
+
+  <div class="kfh-scrnav" id="scrnav"></div>
+
+  <!-- ================= СЕЗОННИК ================= -->
+  <section class="kfh-scr" data-scr="season" data-title="Сезонник">
+    <div class="season-card">
+      <h2>🧑‍ Нанять сезонника — пакет из 5 документов</h2>
+      <p>Один раз введите данные работника → получите сразу: срочный трудовой договор, приказ о приёме, заявление, согласие на обработку ПД и направление на инструктаж. Всё готово к печати и сохранению в архив.</p>
+      <button class="season-btn" id="open-season" type="button">Сформировать пакет</button>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h2 class="card-title">Как это работает</h2>
+      <ol style="padding-left:20px;margin:0">
+        <li>Нажмите «Сформировать пакет».</li>
+        <li>Введите данные сезонника (ФИО, паспорт, должность, сроки, оклад). Реквизиты хозяйства подставятся автоматически.</li>
+        <li>Получите готовый документ из 5 частей — распечатайте, скачайте в Word или сохраните в архив.</li>
+      </ol>
+      <div class="warn-box">⚠️ Сезонный работник — договор не более 6 месяцев, испытание не более 2 недель, увольнение по собственному — за 3 дня (ст. 294 ТК РФ). Зарплата — не реже двух раз в месяц на банковский счёт.</div>
+      <div class="btn-row">
+        <a class="btn btn-secondary btn-wrap" href="legal.html">⚖️ Нанимаю иностранного работника: инструкция и штрафы</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ДОКУМЕНТЫ ================= -->
+  <section class="kfh-scr" data-scr="docs" data-title="Документы">
+    <div class="card">
+      <h2 class="card-title">Генератор кадровых документов</h2>
+      <div class="warn-box">🔒 ФИО и паспортные данные работников используются только для формирования документа в вашем браузере и <b>не сохраняются на сервере</b>. Реквизиты хозяйства хранятся в вашем аккаунте.</div>
+
+      <label class="label">Тип документа</label>
+      <select class="select" id="doc-type"></select>
+
+      <div id="req-box"></div>
+      <div id="inn-box"></div>
+
+      <div id="doc-form"></div>
+      <div class="btn-row"><button class="btn btn-primary" id="gen-btn">Сформировать документ</button></div>
+      <div class="preview" id="doc-preview" hidden></div>
+      <div class="btn-row" id="doc-actions" hidden>
+        <button class="btn btn-secondary" id="print-btn">Печать / PDF</button>
+        <button class="btn btn-secondary" id="word-btn">Скачать Word</button>
+        <button class="btn btn-secondary" id="archive-btn">💾 В архив</button>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-secondary btn-wrap" style="min-height:42px" href="legal.html">⚖️ Договоры, претензии, ответы на проверки — в Юр-помощнике</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ВОПРОСЫ ================= -->
+  <section class="kfh-scr" data-scr="faq" data-title="Вопросы">
+    <div class="card">
+      <h2 class="card-title">Частые вопросы по кадрам</h2>
+      <div id="faq-list"></div>
+      <div class="btn-row">
+        <a class="btn btn-secondary btn-wrap" href="legal.html">⚖️ Штрафы, проверки и споры — Юр-помощник</a>
+        <a class="btn btn-primary btn-wrap" href="request.html">Задать вопрос специалисту</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p>© <span id="year"></span> <a href="index.html">КФХ-Помощник</a> · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p>Сервис предоставляет шаблон и справочную информацию. Перед подписанием документов проверьте их у юриста, бухгалтера или кадрового специалиста.</p>
+  </div>
+</div>
+
+<!-- ================= МОДАЛКА СЕЗОННИКА ================= -->
+<div class="modal" id="season-modal" hidden>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h2>🧑‍🌾 Пакет «Сезонник»</h2>
+      <button class="modal-close" id="season-close" type="button">✕</button>
+    </div>
+    <p class="modal-sub">Заполните данные работника один раз — пакет из 5 документов сформируется автоматически. Реквизиты хозяйства подставятся из вашего профиля.</p>
+
+    <div class="grid-2">
+      <div><label class="label">ФИО работника *</label><input class="input" id="se-w" placeholder="Петров Пётр Петрович"></div>
+      <div><label class="label">Паспорт работника</label><input class="input" id="se-pass" placeholder="9219 123456, выдан ..."></div>
+    </div>
+    <label class="label">Адрес работника</label>
+    <input class="input" id="se-addr" placeholder="420000, РТ, г. Казань, ул. Луговая, 2">
+
+    <div class="grid-2">
+      <div><label class="label">Должность *</label><input class="input" id="se-pos" placeholder="работник на уборочных работах"></div>
+      <div><label class="label">Место работы</label><input class="input" id="se-place" placeholder="поле № 1"></div>
+    </div>
+    <div class="grid-2">
+      <div><label class="label">Дата начала *</label><input class="input" type="date" id="se-start"></div>
+      <div><label class="label">Дата окончания *</label><input class="input" type="date" id="se-end"></div>
+    </div>
+    <div class="grid-2">
+      <div><label class="label">Оклад, руб. до НДФЛ *</label><input class="input" type="number" id="se-pay" min="0" placeholder="45000"></div>
+      <div>
+        <label class="label">Основание срочности</label>
+        <select class="select" id="se-reason">
+          <option value="сезонные работы (ст. 294 ТК РФ)">Сезонные работы (ст. 294 ТК РФ)</option>
+          <option value="временные работы до 2 месяцев">Временные работы до 2 месяцев</option>
+          <option value="на время отсутствия основного работника">На время отсутствия основного работника</option>
+          <option value="на период выполнения конкретной работы">На период выполнения конкретной работы</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="season-generate" type="button">Сформировать 5 документов</button>
+      <button class="btn btn-secondary" id="season-cancel" type="button">Отмена</button>
+    </div>
+    <p class="hint">* обязательные поля. Пакет содержит: срочный трудовой договор, приказ о приёме, заявление о приёме, согласие на обработку ПД, направление на инструктаж.</p>
+  </div>
+</div>
+
+<script>
+window.KFH_SCREEN_OPTS={mobile:"season",desktop:"season"};
+
+var SESSION_KEY="kfh_helper_demo_session_v1";
+var HR_COUNT_KEY="kfh_hr_docs_v1";
+function $(id){return document.getElementById(id);}
+$("year").textContent=new Date().getFullYear();
+function go(id){if(window.KFH&&KFH.goScreen)KFH.goScreen(id);}
+
+function B(v,w){w=w||28;v=(v||"").trim();return v?v:Array(w+1).join("_");}
+function F(id,label,ph){return{id:id,label:label,ph:ph||""};}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmtDate(iso){if(!iso)return "";var d=new Date(iso+"T00:00:00");if(isNaN(d))return iso;return d.toLocaleDateString("ru-RU");}
+function todayISO(){return new Date().toISOString().split("T")[0];}
+
+/* безопасное имя файла */
+function safeFileName(s){return (s||"Документ").replace(/[\\/:*?"<>|]/g," ").trim()||"Документ";}
+
+/* ---------- аккордеон (FAQ) + метрика ---------- */
+document.addEventListener("click",function(e){
+  var h=e.target.closest(".acc-head");if(!h)return;
+  var b=h.parentElement.querySelector(".acc-body");
+  var p=h.querySelector(".plus");
+  var open=b.style.display==="block";
+  b.style.display=open?"none":"block";
+  p.textContent=open?"+":"−";
+  if(!open){var n=parseInt(localStorage.getItem(HR_COUNT_KEY)||"0",10)+1;localStorage.setItem(HR_COUNT_KEY,String(n));}
+});
+
+/* ---------- шаблоны (12 кадровых) ---------- */
+var T={};
+T.labor={t:"Трудовой договор",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("e","Название хозяйства","КФХ Иванов / ООО «Ромашка»"),F("ep","ФИО руководителя","Иванов Иван Иванович"),
+F("inn","ИНН","1650012345"),F("ogrn","ОГРН / ОГРНИП","316169000012345"),
+F("addr_e","Адрес хозяйства","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("w","ФИО работника","Петров Пётр Петрович"),F("pass_w","Паспорт работника (пусто = прочерк)","9219 123456, выдан ..."),
+F("addr_w","Адрес работника","420000, РТ, г. Казань, ул. Луговая, 2"),
+F("pos","Должность","тракторист"),F("place_work","Место работы","поле № 3 / база хозяйства"),
+F("start","Дата начала работы","с 01.09.2026"),F("pay","Оклад, руб. до НДФЛ","45 000"),
+F("time","Режим рабочего времени","пятидневная неделя, 8:00–17:00"),F("sout","Класс условий труда по СОУТ","2 (допустимый)")],
+g:function(v){return "ТРУДОВОЙ ДОГОВОР № ____\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\n"+B(v.e)+", ИНН "+B(v.inn,12)+", ОГРН/ОГРНИП "+B(v.ogrn,15)+",\nадрес: "+B(v.addr_e,44)+", в лице "+B(v.ep)+" (Работодатель), и\n"+B(v.w)+", паспорт: "+B(v.pass_w,32)+",\nадрес: "+B(v.addr_w,44)+" (Работник), заключили договор:\n\n1. ПРЕДМЕТ\n1.1. Должность: "+B(v.pos)+".\n1.2. Место работы: "+B(v.place_work)+".\n1.3. Дата начала: "+B(v.start)+". Работа основная.\n\n2. РАБОЧЕЕ ВРЕМЯ И ОТДЫХ\n2.1. Режим: "+B(v.time)+".\n2.2. Отпуск 28 календарных дней; отдых по ТК РФ.\n\n3. ОПЛАТА ТРУДА\n3.1. Оклад: "+B(v.pay)+" руб. до НДФЛ (не ниже МРОТ).\n3.2. Выплата не реже двух раз в месяц на счёт.\n\n4. УСЛОВИЯ ТРУДА\n4.1. СОУТ: "+B(v.sout)+".\n4.2. СИЗ, медосмотры, инструктажи — по ТК РФ.\n\n5. СОЦСТРАХОВАНИЕ\n5.1. Работник застрахован; НДФЛ и взносы — по закону.\n\n6. ПЕРСОНАЛЬНЫЕ ДАННЫЕ\n6.1. Согласие на обработку ПД оформляется отдельно.\n\n7. РЕКВИЗИТЫ И ПОДПИСИ\nРаботодатель: "+B(v.e)+", ИНН "+B(v.inn,12)+"\n____________ / "+B(v.ep)+" /\n\nРаботник: паспорт "+B(v.pass_w,32)+"\n____________ / "+B(v.w)+" /";}};
+
+T.fixed={t:"Срочный трудовой договор",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("e","Название хозяйства","КФХ Иванов"),F("ep","ФИО руководителя","Иванов Иван Иванович"),
+F("w","ФИО работника","Петров Пётр Петрович"),F("pass_w","Паспорт работника (пусто = прочерк)","9219 123456, выдан ..."),
+F("pos","Должность","работник на уборочных работах"),F("place_work","Место работы","поле № 1"),
+F("start","Дата начала","01.09.2026"),F("end","Дата окончания","31.10.2026"),
+F("reason","Основание срочности (ст. 59 ТК)","сезонные работы (ст. 294 ТК РФ)"),
+F("pay","Оклад, руб. до НДФЛ","45 000"),F("time","Режим рабочего времени","шестидневная неделя, 8:00–17:00")],
+g:function(v){return "СРОЧНЫЙ ТРУДОВОЙ ДОГОВОР № ____\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\n"+B(v.e)+" (Работодатель) и "+B(v.w)+", паспорт: "+B(v.pass_w,32)+" (Работник).\n\n1. Должность: "+B(v.pos)+". Место работы: "+B(v.place_work)+".\n2. Срок: с "+B(v.start)+" по "+B(v.end)+" (сезонные работы — не более 6 месяцев).\n3. Основание срочности (ст. 59 ТК РФ): "+B(v.reason)+".\n4. Оплата: "+B(v.pay)+" руб., выплата не реже двух раз в месяц.\n5. Режим: "+B(v.time)+". Отпуск по ТК РФ (сезонным — 2 дня за месяц).\n6. Соцстрахование и ПД — по ТК РФ и 152-ФЗ.\n\nВНИМАНИЕ: повторное заключение срочных договоров для той же функции может быть признано судом обходом закона с признанием договора бессрочным.\n\nРаботодатель: ____________ "+B(v.ep)+"\nРаботник: ____________ "+B(v.w);}};
+
+T.gph={t:"Договор ГПХ (физлицо / самозанятый)",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("e","Название хозяйства","КФХ Иванов"),F("ep","ФИО заказчика","Иванов Иван Иванович"),
+F("inn","ИНН заказчика","1650012345"),
+F("w","ФИО исполнителя","Сидоров Сидор Сидорович"),F("pass_w","Паспорт исполнителя (пусто = прочерк)","9218 654321, выдан ..."),
+F("status","Статус исполнителя","самозанятый (НПД) / физлицо"),
+F("work","Конкретный результат работ","вспашка 50 га поля № 2"),
+F("end","Срок выполнения","до 25.09.2026"),F("act_days","Срок приёмки, раб. дней","3"),
+F("sum","Стоимость, руб.","60 000")],
+g:function(v){var tax=(v.status||"").indexOf("самозанят")>=0
+?"Исполнитель — плательщик НПД: при каждой оплате выдаёт чек из «Мой налог»; страховые взносы Заказчиком не начисляются."
+:"Заказчик выступает налоговым агентом по НДФЛ и плательщиком страховых взносов.";
+return "ДОГОВОР ПОДРЯДА / ВОЗМЕЗДНОГО ОКАЗАНИЯ УСЛУГ № ____\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\n"+B(v.e)+", ИНН "+B(v.inn,12)+", в лице "+B(v.ep)+" (Заказчик), и\n"+B(v.w)+", паспорт: "+B(v.pass_w,32)+" (Исполнитель).\n\n1. Результат работ: "+B(v.work)+".\n2. Срок: до "+B(v.end)+". Приёмка по акту в течение "+B(v.act_days,5)+" раб. дней.\n3. Цена: "+B(v.sum)+" руб.; оплата после подписания акта.\n4. "+tax+"\n5. Договор гражданско-правовой (ст. 702, 779 ГК РФ): Исполнитель не подчиняется правилам распорядка, организует работу самостоятельно; при признаках трудовых отношений возможна переквалификация (ст. 19.1 ТК РФ).\n6. Ответственность — по ГК РФ.\n\nЗаказчик: ____________ "+B(v.ep)+"\nИсполнитель: ____________ "+B(v.w);}};
+
+T.act={t:"Акт выполненных работ по ГПХ",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","25.09.2026"),F("num","Номер акта","15"),
+F("e","Заказчик (название)","КФХ Иванов"),F("e_inn","ИНН заказчика","1650012345"),F("e_addr","Адрес заказчика","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("e_rep","Представитель заказчика (ФИО, должность)","Иванов И. И., глава КФХ"),F("e_doc","Полномочия заказчика","устава"),
+F("w","Исполнитель (ФИО)","Сидоров Сидор Сидорович"),F("w_inn","ИНН исполнителя (пусто = прочерк)",""),F("w_addr","Адрес исполнителя (пусто = прочерк)",""),
+F("w_rep","Представитель исполнителя (ФИО, должность)","Сидоров С. С."),F("w_doc","Полномочия исполнителя","паспорта"),
+F("base_doc","Основание (договор № и дата)","договора № 5 от 01.09.2026"),
+F("work","Вид работ","вспашка 50 га поля № 2"),F("sum","Стоимость, руб.","60 000")],
+g:function(v){return "АКТ ВЫПОЛНЕННЫХ РАБОТ № "+B(v.num,6)+"\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nОснование: "+B(v.base_doc)+".\n\nЗаказчик: "+B(v.e)+", ИНН "+B(v.e_inn,12)+", адрес: "+B(v.e_addr,40)+",\nв лице "+B(v.e_rep)+", действующего на основании "+B(v.e_doc)+";\nИсполнитель: "+B(v.w)+", ИНН "+B(v.w_inn,12)+", адрес: "+B(v.w_addr,40)+",\nв лице "+B(v.w_rep)+", действующего на основании "+B(v.w_doc)+",\nсоставили настоящий акт:\n\n1. Выполнены работы: "+B(v.work)+".\n2. Стоимость: "+B(v.sum)+" руб. Замечаний нет.\n3. Услуги оказаны в рамках гражданско-правового договора, трудовые отношения отсутствуют.\n4. Акт составлен в двух экземплярах.\n\nЗаказчик: "+B(v.e_rep)+" ____________ м.п. (при наличии)\nИсполнитель: "+B(v.w_rep)+" ____________ м.п. (при наличии)";}};
+
+T.hire_app={t:"Заявление о приёме на работу",f:[
+F("boss_pos","Кому: должность руководителя (дат. пад.)","Директору / Главе КФХ"),
+F("e","Название хозяйства","КФХ Иванов / ООО «Ромашка»"),
+F("boss_dat","ФИО руководителя (дат. пад.)","Иванову Ивану Ивановичу"),
+F("w_gen","От кого: ФИО работника (род. пад.)","Петрова Петра Петровича"),
+F("w_pos","Должность/профессия заявителя (род. пад.)","тракториста"),
+F("dept","Подразделение / куда (необязательно)","в полеводческую бригаду"),
+F("pos","На должность","тракториста"),
+F("start","С даты","с 01 сентября 2026 года"),
+F("nature","Характер работы","на условиях основного места работы"),
+F("date","Дата заявления (слева)","19.08.2026"),
+F("sign","Расшифровка подписи (справа)","Петров П. П.")],
+g:function(v){return "                              "+B(v.boss_pos,16)+" "+B(v.e,28)+"\n                              "+B(v.boss_dat,30)+"\n                              от "+B(v.w_gen,30)+"\n                              "+B(v.w_pos,24)+"\n\n                        ЗАЯВЛЕНИЕ\n\nПрошу принять меня на работу "+(v.dept?"в "+v.dept+" ":"")+"на должность "+B(v.pos)+" "+B(v.start)+" "+B(v.nature)+".\n\n\n"+B(v.date,20)+"                              ____________ / "+B(v.sign,20)+" /\n";}};
+
+T.fire_app={t:"Заявление об увольнении",f:[
+F("boss_pos","Кому: должность руководителя (дат. пад.)","Директору / Главе КФХ"),
+F("e","Название хозяйства","КФХ Иванов / ООО «Ромашка»"),
+F("boss_dat","ФИО руководителя (дат. пад.)","Иванову Ивану Ивановичу"),
+F("w_gen","От кого: ФИО работника (род. пад.)","Петрова Петра Петровича"),
+F("w_pos","Должность/профессия заявителя (род. пад.)","тракториста"),
+F("date_fire","Прошу уволить меня (дата)","с 20 августа 2026 года"),
+F("date","Дата заявления (слева)","17.08.2026"),
+F("sign","Расшифровка подписи (справа)","Петров П. П.")],
+g:function(v){return "                              "+B(v.boss_pos,16)+" "+B(v.e,28)+"\n                              "+B(v.boss_dat,30)+"\n                              от "+B(v.w_gen,30)+"\n                              "+B(v.w_pos,24)+"\n\n                        ЗАЯВЛЕНИЕ\n\nПрошу уволить меня по собственному желанию "+B(v.date_fire)+".\n\n\n"+B(v.date,20)+"                              ____________ / "+B(v.sign,20)+" /\n";}};
+
+T.hire_ord={t:"Приказ о приёме на работу",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","01.09.2026"),
+F("e","Название хозяйства","КФХ Иванов"),F("ep","ФИО руководителя","Иванов Иван Иванович"),
+F("w","ФИО работника","Петров Пётр Петрович"),F("pos","Должность","тракторист"),
+F("start","Дата начала работы","с 01.09.2026"),F("pay","Оплата труда","45 000 руб. в месяц"),
+F("base_doc","Основание (реквизиты договора)","трудового договора № 7 от 19.08.2026")],
+g:function(v){return B(v.e)+"\nПРИКАЗ № ____ о приёме на работу\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nПринять: "+B(v.w)+" на должность "+B(v.pos)+" "+B(v.start)+".\nУсловия оплаты труда: "+B(v.pay)+".\nОснование: "+B(v.base_doc)+".\n\nРуководитель: ____________ / "+B(v.ep)+" /\nС приказом ознакомлен(а): ____________ / "+B(v.w)+" /\nДата ознакомления: «___» ________ 20__ г.";}};
+
+T.fire_ord={t:"Приказ об увольнении",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","20.08.2026"),
+F("e","Название хозяйства","КФХ Иванов"),F("ep","ФИО руководителя","Иванов Иван Иванович"),
+F("w","ФИО работника","Петров Пётр Петрович"),F("pos","Должность","тракторист"),
+F("d","Дата увольнения","20.08.2026"),F("reason","Основание увольнения","по собственному желанию, ст. 80 ТК РФ"),
+F("base_doc","Основание (заявление/договор)","заявления работника от 17.08.2026")],
+g:function(v){return B(v.e)+"\nПРИКАЗ № ____ об увольнении\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nУволить: "+B(v.w)+", должность "+B(v.pos)+", "+B(v.d)+".\nОснование: "+B(v.reason)+"; "+B(v.base_doc)+".\n\nРуководитель: ____________ / "+B(v.ep)+" /\nС приказом ознакомлен(а): ____________ / "+B(v.w)+" /\nДата ознакомления: «___» ________ 20__ г.";}};
+
+T.timesheet={t:"Табель учёта рабочего времени",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","31.08.2026"),
+F("e","Название хозяйства","КФХ Иванов"),F("period","Период","август 2026 г."),
+F("resp","Ответственный","бригадир Сидоров С. С.")],
+g:function(v){return "ТАБЕЛЬ УЧЁТА РАБОЧЕГО ВРЕМЕНИ\n"+B(v.e)+"\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\nПериод: "+B(v.period)+".\n\n| № | ФИО | Должность | Дата | Вид времени | Часы |\n| 1 | "+B("",20)+" | "+B("",14)+" |      | Явка        |      |\n| 2 | "+B("",20)+" | "+B("",14)+" |      | Выходной    |      |\n\nОбозначения: Явка, Выходной, Отпуск, Больничный, Простой.\nОтветственный: ____________ / "+B(v.resp)+" /";}};
+
+T.pd={t:"Согласие на обработку персональных данных",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("w","ФИО работника","Петров Пётр Петрович"),F("pass","Паспортные данные","9219 123456, выдан ..."),
+F("addr","Адрес","420000, РТ, г. Казань, ул. Луговая, 2"),
+F("e","Название хозяйства (оператор)","КФХ Иванов"),F("inn","ИНН оператора","1650012345"),
+F("purpose","Цель обработки","оформление трудовых отношений и кадровый учёт"),
+F("term","Срок обработки","в течение срока хранения кадровых документов")],
+g:function(v){return "СОГЛАСИЕ НА ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nЯ, "+B(v.w)+", паспорт "+B(v.pass,32)+", адрес: "+B(v.addr,40)+", в соответствии со ст. 9 ФЗ-152 даю согласие оператору "+B(v.e)+" (ИНН "+B(v.inn,12)+") на обработку моих персональных данных.\n\n1. Цель: "+B(v.purpose)+".\n2. Данные: ФИО; паспорт; контакты; СНИЛС/ИНН (при предоставлении); иные для цели.\n3. Действия: сбор, запись, систематизация, накопление, хранение, уточнение, извлечение, использование, передача в госорганы (СФР, ФНС), обезличивание, блокирование, удаление, уничтожение.\n4. Срок: "+B(v.term)+" либо до отзыва.\n5. Согласие отзывается письменным заявлением.\n\n____________ / "+B(v.w)+" /";}};
+
+T.instr={t:"Направление на инструктаж по охране труда",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","01.09.2026"),
+F("e","Название хозяйства","КФХ Иванов"),F("ep","ФИО руководителя","Иванов Иван Иванович"),
+F("w","ФИО работника","Петров Пётр Петрович"),F("pos","Должность","тракторист"),
+F("type","Вид инструктажа","вводный / первичный на рабочем месте"),
+F("resp","Ответственный за инструктаж","инженер по ОТ Кузнецов К. К."),
+F("base_doc","Основание (приказ по ОТ, необязательно)","приказа № 3 от 01.03.2026")],
+g:function(v){return "НАПРАВЛЕНИЕ НА ИНСТРУКТАЖ ПО ОХРАНЕ ТРУДА\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\n"+B(v.e)+"\nРаботник: "+B(v.w)+", должность "+B(v.pos)+".\nВид инструктажа: "+B(v.type)+". Дата: "+B(v.date)+".\nОснование: "+B(v.base_doc)+".\nОтветственный: "+B(v.resp)+".\n\nРуководитель: ____________ / "+B(v.ep)+" /\nРаботник: ____________ / "+B(v.w)+" /";}};
+
+T.season_reg={t:"Форма учёта сезонных работников",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","31.10.2026"),
+F("e","Название хозяйства","КФХ Иванов"),F("period","Период","сезон 2026 г."),
+F("resp","Ответственный","бригадир Сидоров С. С.")],
+g:function(v){return "ФОРМА УЧЁТА СЕЗОННЫХ РАБОТНИКОВ\n"+B(v.e)+"\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\nПериод: "+B(v.period)+".\n\n| № | ФИО | Вид работ | Тип договора | Начало | Окончание | Дней | Итого к оплате | Статус |\n| 1 | "+B("",18)+" | "+B("",12)+" |              |        |           |      |                |        |\n\nОтветственный: ____________ / "+B(v.resp)+" /";}};
+
+/* ---------- рендер генератора ---------- */
+var sel=$("doc-type");
+var lastDocName="Документ";
+sel.innerHTML=Object.keys(T).map(function(k){return '<option value="'+k+'">'+T[k].t+'</option>';}).join("");
+function renderForm(){
+  var t=T[sel.value];
+  $("doc-form").innerHTML=t.f.map(function(f){
+    return '<label class="label">'+f.label+'</label><input class="input" id="f_'+f.id+'" placeholder="'+f.ph+'">';
+  }).join("");
+  $("doc-preview").hidden=true;$("doc-actions").hidden=true;
+  if(window.KFHReq){KFHReq.fillEmpty(false);}
+}
+sel.addEventListener("change",renderForm);renderForm();
+
+window.KFHInnGetFields=function(){return T[sel.value].f;};
+window.KFHInnSet=function(id,val){var el=document.getElementById("f_"+id);if(el){el.value=val;}};
+
+$("gen-btn").addEventListener("click",function(){
+  var t=T[sel.value];var v={};
+  t.f.forEach(function(f){v[f.id]=($("f_"+f.id)||{}).value||"";});
+  $("doc-preview").textContent=t.g(v);
+  $("doc-preview").hidden=false;$("doc-actions").hidden=false;
+  lastDocName=T[sel.value].t;
+  var n=parseInt(localStorage.getItem(HR_COUNT_KEY)||"0",10)+1;
+  localStorage.setItem(HR_COUNT_KEY,String(n));
+});
+
+/* Печать / PDF */
+$("print-btn").addEventListener("click",function(){
+  var w=window.open("","","height=800,width=900");
+  w.document.write("<html><head><meta charset='utf-8'><title>Печать</title><style>body{font-family:Arial;font-size:13px}</style></head><body><pre style='white-space:pre-wrap'>"+esc($("doc-preview").textContent)+"</pre></body></html>");
+  w.document.close();w.print();
+});
+
+/* Скачивание в Word: настоящий .docx */
+$("word-btn").addEventListener("click",function(){
+  var text=$("doc-preview").textContent;
+  var name=safeFileName(lastDocName);
+  KFHDocx.download(text,name);
+});
+
+/* сохранение в архив (общая функция из save-archive.js) */
+$("archive-btn").addEventListener("click",async function(){
+  var text=$("doc-preview").textContent;
+  if(!text){alert("Сначала сформируйте документ.");return;}
+  var ok=await KFH.saveDocToArchive({name:lastDocName,doc_type:KFH.archiveType(sel.value),text:text});
+  if(ok)alert("Документ сохранён в архив. Смотрите раздел «Архив хозяйства».");
+});
+
+/* =========================================================
+   ПАКЕТ «СЕЗОННИК»
+   ========================================================= */
+function openSeasonModal(){
+  if(!$("se-start").value)$("se-start").value=todayISO();
+  $("season-modal").hidden=false;
+}
+function closeSeasonModal(){$("season-modal").hidden=true;}
+$("open-season").addEventListener("click",openSeasonModal);
+$("season-close").addEventListener("click",closeSeasonModal);
+$("season-cancel").addEventListener("click",closeSeasonModal);
+
+function genHireAppSimple(s,req){
+  return "                              Директору / Главе "+B(req.e,20)+"\n                              "+B(req.e,28)+"\n                              от "+B(s.w,30)+"\n                              "+B(s.pos,24)+"\n\n                        ЗАЯВЛЕНИЕ\n\nПрошу принять меня на работу на должность "+B(s.pos)+" с "+fmtDate(s.start)+" на условиях срочного трудового договора (сезонные работы).\n\n\n"+fmtDate(s.start)+"                              ____________ / "+B(s.w,20)+" /\n";
+}
+
+$("season-generate").addEventListener("click",function(){
+  var s={
+    w:$("se-w").value.trim(),
+    pass:$("se-pass").value.trim(),
+    addr:$("se-addr").value.trim(),
+    pos:$("se-pos").value.trim(),
+    place:$("se-place").value.trim(),
+    start:$("se-start").value,
+    end:$("se-end").value,
+    pay:$("se-pay").value.trim(),
+    reason:$("se-reason").value
+  };
+  var miss=[];
+  if(!s.w)miss.push("ФИО работника");
+  if(!s.pos)miss.push("должность");
+  if(!s.start)miss.push("дата начала");
+  if(!s.end)miss.push("дата окончания");
+  if(!s.pay||Number(s.pay)<=0)miss.push("оклад");
+  if(miss.length){alert("Заполните обязательные поля: "+miss.join(", ")+".");return;}
+
+  var req=(window.KFHReq&&KFHReq.get)?KFHReq.get():{};
+  var e_name=req.farm_name||"";
+  var e_head=req.head_name||"";
+  var e_inn=req.inn||"";
+
+  var today=todayISO();
+  var place="г. Казань";
+
+  var vFixed={place:place,date:fmtDate(today),e:e_name,ep:e_head,w:s.w,pass_w:s.pass,
+    pos:s.pos,place_work:s.place||"—",start:fmtDate(s.start),end:fmtDate(s.end),
+    reason:s.reason,pay:s.pay,time:"шестидневная неделя, 8:00–17:00"};
+
+  var vOrder={place:place,date:fmtDate(s.start),e:e_name,ep:e_head,w:s.w,pos:s.pos,
+    start:"с "+fmtDate(s.start),pay:s.pay+" руб. в месяц",
+    base_doc:"срочного трудового договора от "+fmtDate(today)};
+
+  var vPD={place:place,date:fmtDate(today),w:s.w,pass:s.pass,addr:s.addr||"—",
+    e:e_name,inn:e_inn,purpose:"оформление трудовых отношений и кадровый учёт",
+    term:"в течение срока хранения кадровых документов"};
+
+  var vInstr={place:place,date:fmtDate(s.start),e:e_name,ep:e_head,w:s.w,pos:s.pos,
+    type:"вводный / первичный на рабочем месте",resp:"(ответственный по ОТ)",
+    base_doc:"приказа № __ от "+fmtDate(s.start)};
+
+  var parts=[
+    {title:"1. СРОЧНЫЙ ТРУДОВОЙ ДОГОВОР",text:T.fixed.g(vFixed)},
+    {title:"2. ПРИКАЗ О ПРИЁМЕ НА РАБОТУ",text:T.hire_ord.g(vOrder)},
+    {title:"3. ЗАЯВЛЕНИЕ О ПРИЁМЕ",text:genHireAppSimple(s,{e:e_name})},
+    {title:"4. СОГЛАСИЕ НА ОБРАБОТКУ ПЕРСОНАЛЬНЫХ ДАННЫХ",text:T.pd.g(vPD)},
+    {title:"5. НАПРАВЛЕНИЕ НА ИНСТРУКТАЖ ПО ОХРАНЕ ТРУДА",text:T.instr.g(vInstr)}
+  ];
+
+  var title="═══════════════════════════════════════════════\n"+
+            "  ПАКЕТ ДОКУМЕНТОВ «СЕЗОННЫЙ РАБОТНИК»\n"+
+            "  "+(e_name||"Хозяйство")+": "+(s.w||"—")+" · "+(s.pos||"—")+"\n"+
+            "  Срок: "+fmtDate(s.start)+" — "+fmtDate(s.end)+"\n"+
+            "═══════════════════════════════════════════════\n";
+  var full=title+"\n\n"+parts.map(function(p){
+    return "━━━━━━  "+p.title+"  ━━━━━━\n\n"+p.text;
+  }).join("\n\n\n");
+
+  $("doc-preview").textContent=full;
+  $("doc-preview").hidden=false;
+  $("doc-actions").hidden=false;
+  $("doc-form").innerHTML='<div class="hint">Ниже — готовый пакет из 5 документов. Используйте «Печать / PDF», «Скачать Word» или «💾 В архив».</div>';
+  lastDocName="Пакет «Сезонник»";
+  closeSeasonModal();
+  go("docs");
+  var n=parseInt(localStorage.getItem(HR_COUNT_KEY)||"0",10)+5;
+  localStorage.setItem(HR_COUNT_KEY,String(n));
+});
+
+/* ---------- FAQ (только кадровые вопросы) ---------- */
+var FAQ=[
+ ["Нужно ли уведомлять МВД при найме иностранца?","Да. О приёме и об увольнении — в течение 3 рабочих дней по форме Приказа МВД № 536. Просрочка — штраф по ст. 18.15 КоАП за каждого работника."],
+ ["Можно ли нанять гражданина Узбекистана без патента?","Нет, если нет иного основания (РВП/ВНЖ). Патент обязателен и действует только в регионе выдачи."],
+ ["Нужен ли патент гражданам ЕАЭС?","Нет. Достаточно трудового договора и уведомления МВД."],
+ ["Как платить зарплату иностранцу?","Только на банковский счёт."],
+ ["Есть ли ограничения по иностранцам в Татарстане?","Регион вправе вводить ограничения по видам деятельности для патентных работников. Проверьте актуальные акты РТ и федеральные постановления на 2026 год."],
+ ["Сезонный работник: на какой срок договор?","До 6 месяцев; испытание не более 2 недель; увольнение по собственному — за 3 дня."],
+ ["Пакет «Сезонник»: что входит?","Срочный трудовой договор, приказ о приёме, заявление о приёме, согласие на обработку ПД, направление на инструктаж. 5 документов формируются одной кнопкой."],
+ ["Нужно ли согласие на обработку персональных данных?","Да, при приёме на работу. Храните копии документов только при наличии основания."]
+];
+$("faq-list").innerHTML=FAQ.map(function(x){return '<div class="acc"><button class="acc-head">'+x[0]+'<span class="plus">+</span></button><div class="acc-body"><p style="margin:0">'+x[1]+'</p></div></div>';}).join("");
+</script>
+
+<!-- Автозаполнение по ИНН + реквизиты сторон + DOCX + сохранение в архив -->
+<script src="dadata.js"></script>
+<script src="req.js"></script>
+<script src="download-docx.js"></script>
+<script src="save-archive.js"></script>
+
+<!-- Общий фундамент: меню, логотип→главная, вкладки -->
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>КФХ-Помощник — единый кабинет фермера</title>
+<meta name="description" content="КФХ-Помощник — веб-сервис для малых и средних сельхозпроизводителей: кадровые документы, экономика поля, юридический помощник, субсидии, календарь фермера, архив хозяйства." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--muted-soft:#8a94a0;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--radius-card:22px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.page{max-width:900px;margin:0 auto;padding:16px 16px 32px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.top-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.auth-area{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-light{background:#fff;color:var(--green-deep)}.btn-light:hover{background:#f0fdf4}
+.hero-mini{margin-top:14px;padding:22px 24px;border-radius:var(--radius-card);color:#fff;background:linear-gradient(100deg,#14532d 0%,#178a46 48%,#7cc31c 100%)}
+.hero-mini h1{font-size:27px;font-weight:900;letter-spacing:-.02em}
+.hero-mini p{margin:8px 0 0;color:rgba(255,255,255,.94);font-size:16px}
+.hero-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.card{margin-top:14px;padding:16px 18px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:21px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.mod-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.mod-tile{display:flex;align-items:center;gap:10px;min-height:66px;padding:12px 14px;background:var(--inner-bg);border:1px solid var(--inner-border);border-radius:14px}
+.mod-ico{font-size:26px;flex-shrink:0;line-height:1}
+.mod-t{font-weight:800;font-size:15px;line-height:1.25;color:var(--ink)}
+.footer{margin-top:18px;text-align:center;color:var(--muted-soft);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}.footer a:hover{color:var(--green-dark)}
+@media (min-width:900px){.mod-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.hero-mini h1{font-size:32px}}
+@media (max-width:420px){.hero-btns .btn{flex:1}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="kfh-topbar">
+    <div class="top-brand">🌱 КФХ-Помощник · Цифровой кабинет фермера</div>
+    <div class="auth-area" id="auth-area">
+      <a href="login.html" class="btn btn-secondary">Войти</a>
+      <a href="login.html" class="btn btn-primary">Регистрация</a>
+    </div>
+  </div>
+
+  <section class="hero-mini">
+    <h1>Единый кабинет фермера</h1>
+    <p>Документы, кадры, экономика поля, субсидии и календарь дедлайнов — в одном месте.</p>
+    <div class="hero-btns">
+      <a href="login.html" class="btn btn-light">Начать бесплатно</a>
+    </div>
+  </section>
+
+  <main>
+    <section class="card">
+      <h2 class="card-title">Модули сервиса</h2>
+      <div class="mod-grid">
+        <div class="mod-tile"><span class="mod-ico">📊</span><span class="mod-t">Экономика поля</span></div>
+        <div class="mod-tile"><span class="mod-ico">🧾</span><span class="mod-t">Кадровые документы</span></div>
+        <div class="mod-tile"><span class="mod-ico">🌾</span><span class="mod-t">Субсидии и гранты</span></div>
+        <div class="mod-tile"><span class="mod-ico">📅</span><span class="mod-t">Календарь фермера</span></div>
+        <div class="mod-tile"><span class="mod-ico">⚖️</span><span class="mod-t">Юр. помощник</span></div>
+        <div class="mod-tile"><span class="mod-ico">🗂️</span><span class="mod-t">Архив хозяйства</span></div>
+        <div class="mod-tile"><span class="mod-ico">🏡</span><span class="mod-t">Анкета хозяйства</span></div>
+        <div class="mod-tile"><span class="mod-ico">✉️</span><span class="mod-t">Заявка</span></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> КФХ-Помощник · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+  </footer>
+</div>
+
+<script>
+var SESSION_KEY="kfh_helper_demo_session_v1";
+document.getElementById("year").textContent=new Date().getFullYear();
+(function(){
+  var e=localStorage.getItem(SESSION_KEY);
+  if(e){document.getElementById("auth-area").innerHTML='<a href="cabinet.html" class="btn btn-primary">В кабинет</a>';return;}
+  if(typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined"){
+    var sb=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+    sb.auth.getSession().then(function(s){
+      if(s.data.session){document.getElementById("auth-area").innerHTML='<a href="cabinet.html" class="btn btn-primary">В кабинет</a>';}
+    });
+  }
+})();
+</script>
+
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

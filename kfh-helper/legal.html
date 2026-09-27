@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Юридический помощник — КФХ-Помощник</title>
+<meta name="description" content="Юридический помощник фермера: что делать шаг за шагом, калькулятор штрафов, шаблоны договоров, претензий, актов и ответов на предписания, автозаполнение реквизитов по ИНН, сохранение в архив." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--red:#b91c1c;--amber:#92610e;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input,.select{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus,.select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.warn-box{margin-top:12px;padding:13px 16px;background:var(--amber-soft);border:1px solid var(--amber-border);border-left:5px solid #eab308;border-radius:12px;color:#6d4d10;font-size:15px}
+.out-box{margin-top:12px;padding:16px 18px;background:#fff;border:1px solid var(--inner-border);border-radius:12px;font-size:15px}
+.out-box .big{font-size:20px;font-weight:800;color:var(--red)}
+.preview{margin-top:14px;padding:18px;background:#fff;border:1px solid var(--inner-border);border-radius:12px;white-space:pre-wrap;font-size:14px;max-height:60vh;overflow-y:auto}
+
+/* ========== ЕДИНАЯ ЛЕНТА ФИЛЬТРОВ: одна линия, прокрутка, липкая под вкладками ========== */
+.chip-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;position:sticky;top:60px;z-index:40;background:var(--page-bg);padding:8px 2px;margin:0 0 14px;scrollbar-width:none}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;min-height:44px;padding:10px 17px;border-radius:12px;border:1px solid #cfd8d0;background:#fff;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
+.chip.active{background:var(--green);border-color:var(--green);color:#fff}
+
+.acc{background:#fff;border:1px solid var(--inner-border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.acc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:15px 16px;background:none;border:none;font:inherit;font-weight:700;font-size:16px;color:var(--ink);cursor:pointer;text-align:left}
+.acc-head:hover{background:#f6faf7}
+.plus{width:28px;height:28px;border-radius:8px;background:var(--green-soft);color:var(--green-dark);display:grid;place-items:center;font-weight:900;flex-shrink:0}
+.acc-body{display:none;padding:0 16px 16px;color:var(--muted);font-size:15px}
+.acc-body ol{margin:0 0 10px;padding-left:20px}.acc-body ol li{margin-bottom:6px}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+@media (max-width:640px){.card{padding:16px 14px}.btn-row .btn{flex:1 1 100%;white-space:normal;text-align:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <section class="biz-card">
+    <h1>⚖️ Юридический помощник</h1>
+    <p>Что делать шаг за шагом, сколько можно потерять на штрафах и какие документы нужны: претензии, договоры, акты и ответы на предписания с готовыми реквизитами.</p>
+  </section>
+
+  <div class="kfh-scrnav" id="scrnav"></div>
+
+  <!-- ================= ДОКУМЕНТЫ ================= -->
+  <section class="kfh-scr" data-scr="docs" data-title="Документы">
+    <div class="card">
+      <h2 class="card-title">Генератор документов</h2>
+      <div class="warn-box">🔒 Введённые данные используются только для формирования документа в вашем браузере и <b>не сохраняются на сервере</b>. Реквизиты хозяйства хранятся в вашем аккаунте.</div>
+
+      <label class="label">Тип документа</label>
+      <select class="select" id="doc-type"></select>
+
+      <div id="req-box"></div>
+      <div id="inn-box"></div>
+
+      <div id="doc-form"></div>
+      <div class="btn-row"><button class="btn btn-primary" id="gen-btn">Сформировать документ</button></div>
+      <div class="preview" id="doc-preview" hidden></div>
+      <div class="btn-row" id="doc-actions" hidden>
+        <button class="btn btn-secondary" id="print-btn">Печать / PDF</button>
+        <button class="btn btn-secondary" id="word-btn">Скачать Word</button>
+        <button class="btn btn-secondary" id="archive-btn">💾 В архив</button>
+      </div>
+      <div class="btn-row">
+        <a class="btn btn-secondary btn-wrap" style="min-height:42px" href="hr.html">🧾 Трудовые договоры, приказы, заявления — в Кадровых документах</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= ЧТО ДЕЛАТЬ ================= -->
+  <section class="kfh-scr" data-scr="what" data-title="Что делать">
+    <div class="card">
+      <h2 class="card-title">Что делать: сценарии шаг за шагом</h2>
+      <p class="hint" style="margin:0 0 4px">Выберите ситуацию — лента прокручивается влево-вправо.</p>
+      <div class="chip-row" id="chips">
+        <button class="chip active" data-situ="all">Все</button>
+        <button class="chip" data-situ="sale">Реализация и неоплата</button>
+        <button class="chip" data-situ="land">Земля и ущерб</button>
+        <button class="chip" data-situ="workers">Работники и ГПХ</button>
+        <button class="chip" data-situ="check">Проверки</button>
+        <button class="chip" data-situ="owner">Владелец отсутствует</button>
+        <button class="chip" data-situ="coop">Кооперация</button>
+        <button class="chip" data-situ="fines">Штрафы и риски</button>
+      </div>
+
+      <div class="acc" data-situ="sale"><button class="acc-head">💰 Покупатель не платит<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Соберите подтверждения передачи: акт, УПД, ТТН, переписку.</li>
+          <li>Направьте письменную претензию со сроком оплаты.</li>
+          <li>Выждите срок из претензии/договора (обычно 30 дней) — досудебный порядок.</li>
+          <li>Подайте иск в арбитражный суд; при сумме до 800 тыс. руб. возможен упрощённый порядок.</li>
+          <li>Контролируйте исполнение (банк, приставы).</li>
+        </ol><button class="btn btn-secondary" onclick="openTpl('claim')">Сформировать претензию</button></div></div>
+
+      <div class="acc" data-situ="fines"><button class="acc-head">🧾 Отказали в субсидии или требуют вернуть<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Запросите письменное основание отказа/возврата (акт, уведомление).</li>
+          <li>Сверьте с условиями соглашения: целевое использование, показатели, отчётность.</li>
+          <li>Соберите доказательства выполнения: акты, отчёты, платёжки, фото.</li>
+          <li>Подайте мотивированные возражения в срок, указанный в уведомлении.</li>
+          <li>При отказе — обжалуйте в суде.</li>
+        </ol></div></div>
+
+      <div class="acc" data-situ="check"><button class="acc-head">🔎 Пришла проверка или предписание<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Попросите удостоверение и приказ о проверке; сверьте ФИО и предмет.</li>
+          <li>Не подписывайте документы «на слово» — замечания вписывайте в акт.</li>
+          <li>Запрашивайте копии актов и приложений; фиксируйте всё письменно.</li>
+          <li>Подготовьте письменный ответ в установленный срок (5–10 рабочих дней).</li>
+          <li>При споре — юрист и обжалование в установленные сроки.</li>
+        </ol><button class="btn btn-secondary" onclick="openTpl('resp_fns')">Сформировать ответ на запрос</button></div></div>
+
+      <div class="acc" data-situ="workers"><button class="acc-head">🧑‍ Нанимаю иностранного работника<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Определите статус: ЕАЭС / патент / РВП-ВНЖ / особые правила.</li>
+          <li>Проверьте документы: паспорт, миграционная карта «работа», учёт, патент и чеки (регион выдачи!).</li>
+          <li>Заключите трудовой договор на русском языке.</li>
+          <li>Уведомьте МВД о приёме и об увольнении — по 3 рабочих дня.</li>
+          <li>Зарплата — только на банковский счёт; храните копии и уведомления.</li>
+        </ol><button class="btn btn-secondary" onclick="location.href='hr.html'">Кадровые документы</button></div></div>
+
+      <div class="acc" data-situ="land"><button class="acc-head">🗺️ Земельный спор: границы, расторжение аренды<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Закажите выписку ЕГРН и сверьте границы с фактическим использованием.</li>
+          <li>При самозахвате — акт с кадастровым инженером, претензия соседу.</li>
+          <li>При расторжении аренды проверьте основания и порядок уведомления.</li>
+          <li>Арендатор, надлежаще исполнявший обязанности, имеет преимущественное право на новый срок.</li>
+          <li>Споры по земле — в арбитражном суде; фиксируйте всё документально.</li>
+        </ol></div></div>
+
+      <div class="acc" data-situ="land"><button class="acc-head">🔥 Повредили урожай или имущество<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Зафиксируйте ущерб: фото/видео, акт со свидетелями, обращение в полицию/администрацию.</li>
+          <li>Закажите независимую оценку ущерба.</li>
+          <li>Направьте претензию виновному лицу; страховой — уведомление по полису.</li>
+          <li>Не возместят добровольно — иск в суд (ст. 1064 ГК РФ).</li>
+        </ol></div></div>
+
+      <div class="acc" data-situ="owner"><button class="acc-head">🏥 Владелец выпал на 1–2 месяца<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Оформите доверенность на документы и расчёты (для банка — форма банка).</li>
+          <li>Подключите доверенному лицу доступ к банк-клиенту по правилам банка.</li>
+          <li>Пароли и ключи — в запечатанный конверт; знающий человек определён.</li>
+          <li>Составьте календарь ключевых операций сезона.</li>
+          <li>Документы — в «Архив хозяйства», чтобы быстро поднять историю.</li>
+        </ol><button class="btn btn-secondary" onclick="openTpl('poa')">Сформировать доверенность</button></div></div>
+
+      <div class="acc" data-situ="coop"><button class="acc-head">🤝 Хочу закупаться и продавать вместе<span class="plus">+</span></button>
+        <div class="acc-body"><ol>
+          <li>Найдите 3+ хозяйств с похожими интересами.</li>
+          <li>Выберите форму: снабженческо-сбытовой кооператив (СПоК) или совместные заявки.</li>
+          <li>Проверьте меры поддержки кооперации в «Субсидиях и грантах».</li>
+        </ol><button class="btn btn-secondary" onclick="location.href='subsidies.html'">Открыть субсидии</button></div></div>
+    </div>
+  </section>
+
+  <!-- ================= ШТРАФЫ ================= -->
+  <section class="kfh-scr" data-scr="fines" data-title="Штрафы">
+    <div class="card">
+      <h2 class="card-title">Сколько потеряю: калькулятор штрафов и рисков</h2>
+      <p class="hint" style="margin:0 0 6px">Выберите нарушение — покажем санкции и как их избежать. Для ГПХ — введите сумму выплат за год.</p>
+
+      <label class="label">Нарушение / риск</label>
+      <select class="select" id="fine-type">
+        <option value="foreign_no_doc">Иностранец без оформления</option>
+        <option value="foreign_late">Просрочка уведомления МВД по иностранцу</option>
+        <option value="no_labor">Уклонение от трудового договора</option>
+        <option value="subsidy">Возврат субсидии за нарушение условий</option>
+        <option value="gph">Переквалификация ГПХ (расчёт потерь)</option>
+      </select>
+
+      <div id="gph-wrap" hidden>
+        <label class="label">Сумма выплат исполнителю за год, руб.</label>
+        <input class="input" type="number" id="gph-sum" min="0" step="1000" placeholder="Например: 600000" />
+        <div class="btn-row"><button class="btn btn-primary" id="gph-calc">Рассчитать потери</button></div>
+      </div>
+
+      <div class="out-box" id="fine-out"></div>
+      <div class="warn-box">⚠️ Диапазоны санкций справочные (КоАП/НК РФ) и могут меняться. Точный расчёт — у юриста.</div>
+    </div>
+  </section>
+
+  <!-- ================= ВОПРОСЫ ================= -->
+  <section class="kfh-scr" data-scr="faq" data-title="Вопросы">
+    <div class="card">
+      <h2 class="card-title">Частые вопросы</h2>
+      <div id="faq-list"></div>
+      <div class="btn-row">
+        <a class="btn btn-primary btn-wrap" href="request.html">Задать вопрос юристу</a>
+        <a class="btn btn-secondary btn-wrap" href="hr.html">Кадровые документы</a>
+        <a class="btn btn-secondary btn-wrap" href="subsidies.html">Субсидии и гранты</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p>© <span id="year"></span> <a href="index.html">КФХ-Помощник</a> · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p>Материалы не являются индивидуальной юридической консультацией. Перед подписанием документов и принятием решений обратитесь к юристу.</p>
+  </div>
+</div>
+
+<script>
+window.KFH_SCREEN_OPTS={mobile:"docs",desktop:"docs"};
+
+var SESSION_KEY="kfh_helper_demo_session_v1";
+var LEGAL_COUNT_KEY="kfh_legal_docs_v1";
+function $(id){return document.getElementById(id);}
+$("year").textContent=new Date().getFullYear();
+function go(id){if(window.KFH&&KFH.goScreen)KFH.goScreen(id);}
+
+function B(v,w){w=w||28;v=(v||"").trim();return v?v:Array(w+1).join("_");}
+function F(id,label,ph){return{id:id,label:label,ph:ph||""};}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmt(n){return Math.round(n).toLocaleString("ru-RU");}
+
+/* безопасное имя файла */
+function safeFileName(s){return (s||"Документ").replace(/[\\/:*?"<>|]/g," ").trim()||"Документ";}
+
+/* ---------- аккордеон + метрика ---------- */
+document.addEventListener("click",function(e){
+  var h=e.target.closest(".acc-head");if(!h)return;
+  var b=h.parentElement.querySelector(".acc-body");
+  var p=h.querySelector(".plus");
+  var open=b.style.display==="block";
+  b.style.display=open?"none":"block";
+  p.textContent=open?"+":"−";
+  if(!open){var n=parseInt(localStorage.getItem(LEGAL_COUNT_KEY)||"0",10)+1;localStorage.setItem(LEGAL_COUNT_KEY,String(n));}
+});
+
+/* ---------- фильтр-лента ---------- */
+document.querySelectorAll(".chip").forEach(function(ch){
+  ch.addEventListener("click",function(){
+    document.querySelectorAll(".chip").forEach(function(x){x.classList.remove("active");});
+    ch.classList.add("active");
+    var k=ch.dataset.situ;
+    document.querySelectorAll("[data-situ]").forEach(function(el){
+      if(el.classList.contains("chip"))return;
+      var list=(el.dataset.situ||"").split(" ");
+      el.style.display=(k==="all"||list.indexOf(k)>=0)?"":"none";
+    });
+  });
+});
+
+/* ---------- калькулятор штрафов ---------- */
+var FINES={
+ foreign_no_doc:{t:"Иностранец без оформления",s:"Граждане 2–5 тыс. руб.; должностные лица и ИП 25–50 тыс. руб.; юрлица 250–800 тыс. руб. за КАЖДОГО работника или приостановление до 90 суток (ст. 18.15 КоАП РФ).",a:"Проверяйте статус и патент (регион выдачи!), договор, уведомление МВД за 3 раб. дня, оплата на счёт."},
+ foreign_late:{t:"Просрочка уведомления МВД",s:"Та же ст. 18.15 КоАП РФ — за каждого работника (юрлицам до 800 тыс. руб.). Практика штрафует даже за 1–3 дня просрочки.",a:"Напоминание: приём/увольнение иностранца → уведомление МВД в течение 3 рабочих дней. Храните копии."},
+ no_labor:{t:"Уклонение от трудового договора",s:"Граждане 5–10 тыс.; ИП 5–10 тыс.; должностные лица 10–20 тыс.; юрлица 50–100 тыс. руб. (ч. 4 ст. 5.27 КоАП РФ) + риск доначисления взносов и НДФЛ.",a:"Оформляйте по содержанию: регулярная работа по должности — трудовой договор; разовый результат — ГПХ/самозанятый."},
+ subsidy:{t:"Возврат субсидии за нарушение условий",s:"Субсидию могут потребовать вернуть полностью или частично при нарушении целевого использования, показателей или несдаче отчётности; возможны пени по соглашению.",a:"Ведите учёт обязательств, сдавайте отчётность в срок, письменно уведомляйте об изменениях; храните подтверждения расходов."}
+};
+function renderFine(){
+  var t=$("fine-type").value;
+  if(t==="gph"){$("gph-wrap").hidden=false;$("fine-out").innerHTML="Введите сумму выплат за год и нажмите «Рассчитать потери».";return;}
+  $("gph-wrap").hidden=true;var f=FINES[t];
+  $("fine-out").innerHTML="<b>"+f.t+"</b><br>"+f.s+"<br><br><b>Как избежать:</b> "+f.a;
+}
+$("fine-type").addEventListener("change",renderFine);
+$("gph-calc").addEventListener("click",function(){
+  var S=parseFloat($("gph-sum").value)||0;
+  if(S<=0){$("fine-out").innerHTML="Введите сумму выплат за год.";return;}
+  var ndfl=0.13*S,vzn=0.30*S,base=ndfl+vzn,f1=0.2*base,f2=0.4*base;
+  $("fine-out").innerHTML="<b>Переквалификация ГПХ в трудовой (оценка потерь)</b><br>НДФЛ 13%: ≈ "+fmt(ndfl)+" руб.<br>Взносы ≈30%: ≈ "+fmt(vzn)+" руб.<br>Штраф 20–40% от неуплаченного (ст. 122 НК РФ): ≈ "+fmt(f1)+" – "+fmt(f2)+" руб. + пени.<br><br><span class='big'>Итого примерно: "+fmt(base+f1)+" – "+fmt(base+f2)+" руб.</span><br><br><b>Как избежать:</b> договор на результат, акт, нет графика и подчинения; либо самозанятый (чек при каждой оплате).";
+});
+renderFine();
+
+/* ---------- шаблоны ---------- */
+var T={};
+T.claim={t:"Претензия контрагенту (неоплата)",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("e","Кто направляет","КФХ Иванов"),F("ep","ФИО руководителя","Иванов Иван Иванович"),
+F("to","Кому (контрагент)","ООО «Заготовитель»"),
+F("base_doc","Основание (договор)","договора № 12 от 01.07.2026"),
+F("ground","Что поставлено","пшеница 20 т по УПД № 15 от 05.07.2026"),
+F("debt","Сумма долга, руб.","380 000"),
+F("deadline","Срок оплаты по претензии","в течение 10 календарных дней")],
+g:function(v){return "ПРЕТЕНЗИЯ\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nКому: "+B(v.to)+"\nОт кого: "+B(v.e)+", "+B(v.ep)+"\n\nМежду сторонами заключён "+B(v.base_doc)+". Наша сторона исполнила обязательства: "+B(v.ground)+".\nНа дату направления претензии задолженность: "+B(v.debt)+" руб.\n\nПросим погасить задолженность "+B(v.deadline)+". Иначе обратимся в арбитражный суд с отнесением расходов, процентов (ст. 395 ГК РФ) и иных сумм.\n\nПриложения: копия договора; копия УПД/акта.\n\n"+B(v.ep)+" ____________";}};
+
+T.sale={t:"Договор купли-продажи с/х продукции (полный)",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("seller","Продавец","КФХ Иванов"),F("seller_inn","ИНН продавца","1650012345"),F("seller_addr","Адрес продавца","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("buyer","Покупатель","ООО «Заготовитель»"),F("buyer_inn","ИНН покупателя","1650098765"),F("buyer_addr","Адрес покупателя","420000, РТ, г. Казань, ул. Складская, 5"),
+F("prod","Наименование продукции","пшеница мягкая 3 класса"),F("qty","Количество","20 т"),
+F("gost","Качество (ГОСТ/ТУ/декларация)","ГОСТ 9353-2016, декларация соответствия"),
+F("price","Цена за единицу, руб.","15 000"),F("total","Общая сумма, руб.","300 000"),F("tax","Налоговый режим","Продавец на ЕСХН, НДС не облагается"),
+F("delivery","Порядок передачи (срок, место)","до 30.08.2026, склад Покупателя, транспорт Продавца"),
+F("accept_days","Срок приёмки и возражений, дней","3"),
+F("pay_days","Срок оплаты после акта, дней","10"),
+F("penalty","Пени за просрочку оплаты, % в день","0,1"),
+F("seller_sign","Подпись продавца (ФИО, должность)","Иванов И. И., глава КФХ"),
+F("buyer_sign","Подпись покупателя (ФИО, должность)","Петров П. П., директор")],
+g:function(v){return "ДОГОВОР КУПЛИ-ПРОДАЖИ СЕЛЬСКОХОЗЯЙСТВЕННОЙ ПРОДУКЦИИ № ____\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\n"+B(v.seller)+", ИНН "+B(v.seller_inn,12)+", адрес: "+B(v.seller_addr,40)+" (Продавец), и\n"+B(v.buyer)+", ИНН "+B(v.buyer_inn,12)+", адрес: "+B(v.buyer_addr,40)+" (Покупатель), заключили договор:\n\n1. ПРЕДМЕТ\n1.1. Продавец передаёт, а Покупатель принимает и оплачивает: "+B(v.prod)+".\n1.2. Количество: "+B(v.qty)+". Качество: "+B(v.gost)+".\n1.3. Продавец гарантирует, что продукция свободна от прав третьих лиц и соответствует условиям качества.\n\n2. ЦЕНА И ОБЩАЯ СУММА\n2.1. Цена: "+B(v.price)+" руб./ед. Общая сумма: "+B(v.total)+" руб. "+B(v.tax)+".\n2.2. Цена включает погрузку и упаковку, если иное не согласовано.\n\n3. ПЕРЕДАЧА\n3.1. "+B(v.delivery)+". Риск случайной гибели переходит в момент передачи.\n\n4. ПРИЁМКА\n4.1. Приёмка по количеству и качеству в течение "+B(v.accept_days)+" дней; возражения оформляются актом с участием сторон.\n\n5. ПОРЯДОК ОПЛАТЫ\n5.1. Оплата в течение "+B(v.pay_days)+" дней с даты акта, безналично на счёт Продавца.\n\n6. ОТВЕТСТВЕННОСТЬ\n6.1. Пени за просрочку оплаты: "+B(v.penalty)+"% от суммы просрочки за каждый день.\n6.2. В остальном — ответственность по ГК РФ (в т.ч. проценты ст. 395 ГК РФ).\n\n7. ФОРС-МАЖОР\n7.1. Стороны освобождаются при непреодолимой силе с уведомлением в разумный срок.\n\n8. РАЗРЕШЕНИЕ СПОРОВ\n8.1. Обязательный претензионный порядок, срок ответа 30 дней.\n8.2. Споры — в арбитражном суде по месту нахождения ответчика.\n\n9. ЗАКЛЮЧИТЕЛЬНЫЕ ПОЛОЖЕНИЯ\n9.1. Изменения и расторжение — по соглашению сторон или по ГК РФ.\n9.2. Договор составлен в двух экземплярах.\n\n10. РЕКВИЗИТЫ И ПОДПИСИ\nПродавец: "+B(v.seller)+", ИНН "+B(v.seller_inn,12)+"\n____________ / "+B(v.seller_sign)+" /  м.п.\nПокупатель: "+B(v.buyer)+", ИНН "+B(v.buyer_inn,12)+"\n____________ / "+B(v.buyer_sign)+" /  м.п.";}};
+
+T.pact={t:"Акт приёма-передачи продукции (полный)",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","20.08.2026"),F("num","Номер акта","15"),
+F("seller","Продавец","КФХ Иванов"),F("seller_inn","ИНН продавца","1650012345"),F("seller_addr","Адрес продавца","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("seller_rep","Представитель продавца (ФИО, должность)","Иванов И. И., глава КФХ"),F("seller_doc","Полномочия продавца (устав/доверенность)","устава"),
+F("buyer","Покупатель","ООО «Заготовитель»"),F("buyer_inn","ИНН покупателя","1650098765"),F("buyer_addr","Адрес покупателя","420000, РТ, г. Казань, ул. Складская, 5"),
+F("buyer_rep","Представитель покупателя (ФИО, должность)","Петров П. П., директор"),F("buyer_doc","Полномочия покупателя (устав/доверенность)","устава"),
+F("base_doc","Основание (договор № и дата)","договора № 12 от 01.07.2026"),
+F("prod","Наименование продукции","пшеница мягкая 3 класса"),F("qty","Количество","20"),F("unit","Единица измерения","т"),
+F("price","Цена за единицу, руб.","15 000"),F("total","Общая стоимость, руб.","300 000"),
+F("state","Состояние и качество","претензий к качеству и комплектности нет")],
+g:function(v){return "АКТ ПРИЁМА-ПЕРЕДАЧИ ПРОДУКЦИИ № "+B(v.num,6)+"\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nОснование: "+B(v.base_doc)+".\n\nПродавец: "+B(v.seller)+", ИНН "+B(v.seller_inn,12)+", адрес: "+B(v.seller_addr,40)+",\nв лице "+B(v.seller_rep)+", действующего на основании "+B(v.seller_doc)+";\nПокупатель: "+B(v.buyer)+", ИНН "+B(v.buyer_inn,12)+", адрес: "+B(v.buyer_addr,40)+",\nв лице "+B(v.buyer_rep)+", действующего на основании "+B(v.buyer_doc)+",\nсоставили настоящий акт:\n\n1. Продавец передал, а Покупатель принял продукцию:\nНаименование: "+B(v.prod)+"\nКоличество: "+B(v.qty)+" "+B(v.unit,6)+"\nЦена за единицу: "+B(v.price)+" руб.\nОбщая стоимость: "+B(v.total)+" руб.\n\n2. Состояние и качество: "+B(v.state)+".\n\n3. Претензий по количеству, качеству и срокам, кроме п. 2, стороны не имеют.\n\n4. Акт составлен в двух экземплярах.\n\nПродавец: "+B(v.seller_rep)+" ____________ м.п. (при наличии)\nПокупатель: "+B(v.buyer_rep)+" ____________ м.п. (при наличии)";}};
+
+T.lease={t:"Договор аренды с/х земли",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("lessor","Арендодатель","Иванов И. И. / ООО «Земля»"),F("lessee","Арендатор","КФХ Иванов"),
+F("kad","Кадастровый номер","16:00:000000:000"),F("area","Площадь, га","120"),
+F("target","Целевое назначение","сельскохозяйственное производство"),
+F("term","Срок аренды","3 года"),F("rent","Арендная плата","5 000 руб./га в год"),F("pay","Порядок оплаты","ежегодно до 01.03")],
+g:function(v){return "ДОГОВОР АРЕНДЫ ЗЕМЕЛЬНОГО УЧАСТКА С/Х НАЗНАЧЕНИЯ\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\n"+B(v.lessor)+" (Арендодатель) и "+B(v.lessee)+" (Арендатор).\n\n1. Участок: кадастровый номер "+B(v.kad)+", площадь "+B(v.area)+" га.\n2. Назначение: "+B(v.target)+".\n3. Срок: "+B(v.term)+".\n4. Аренда: "+B(v.rent)+"; порядок: "+B(v.pay)+".\n5. Арендатор использует участок по назначению, не допускает ухудшения.\n6. Договор сроком от 1 года подлежит государственной регистрации в Росреестре.\n7. Арендатор, надлежаще исполнявший обязанности, имеет преимущественное право на новый срок (ст. 621 ГК РФ, ст. 10 ФЗ-101).\n\nПодписи: ____________";}};
+
+T.addag={t:"Дополнительное соглашение к договору",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("s1","Сторона 1","КФХ Иванов"),F("s2","Сторона 2","ООО «Заготовитель»"),
+F("base_doc","К договору","договора № 12 от 01.07.2026"),
+F("clause","Номер пункта","3.1"),F("newtext","Новая редакция","Цена составляет 16 000 руб. за тонну")],
+g:function(v){return "ДОПОЛНИТЕЛЬНОЕ СОГЛАШЕНИЕ\nк "+B(v.base_doc)+"\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\n"+B(v.s1)+" и "+B(v.s2)+" согласовали:\n\n1. Пункт "+B(v.clause,6)+" изложить в редакции: «"+B(v.newtext,60)+"».\n2. Остальные условия без изменений.\n3. Соглашение — неотъемлемая часть договора, в двух экземплярах.\n\nПодписи: ____________";}};
+
+T.term={t:"Уведомление о расторжении договора",f:[
+F("place","Место составления","г. Казань"),F("date","Дата составления","19.08.2026"),
+F("e","От кого","КФХ Иванов"),F("ep","ФИО руководителя","Иванов Иван Иванович"),
+F("to","Кому","ООО «Заготовитель»"),
+F("base_doc","Договор","договора № 12 от 01.07.2026"),
+F("reason","Основание","существенное нарушение сроков оплаты"),
+F("stop","Дата прекращения","с 01.09.2026")],
+g:function(v){return "УВЕДОМЛЕНИЕ О РАСТОРЖЕНИИ ДОГОВОРА\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nКому: "+B(v.to)+"\nОт кого: "+B(v.e)+"\n\nУведомляем о расторжении "+B(v.base_doc)+".\nОснование: "+B(v.reason)+".\nДоговор прекращается с "+B(v.stop)+", если иное не предусмотрено договором или законом.\nПросим произвести необходимые расчёты.\n\n"+B(v.ep)+" ____________";}};
+
+T.poa={t:"Доверенность (полная)",f:[
+F("place","Место составления","г. Казань"),
+F("date_word","Дата совершения (прописью)","девятнадцатое августа две тысячи двадцать шестого года"),
+F("pr","Доверитель (ФИО полностью)","Иванов Иван Иванович"),F("pr_pass","Паспорт доверителя","9219 123456, выдан ..."),F("pr_addr","Адрес доверителя","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("ag","Представитель (ФИО полностью)","Петров Пётр Петрович"),F("ag_pass","Паспорт представителя","9218 654321, выдан ..."),F("ag_addr","Адрес представителя","420000, РТ, г. Казань, ул. Луговая, 2"),
+F("powers","Полномочия (точный список)","подписывать и получать акты, накладные и иные документы хозяйства; получать ТМЦ; представлять интересы в органах и организациях по хозяйственным вопросам"),
+F("term","Срок доверенности","до 31.12.2026")],
+g:function(v){return "ДОВЕРЕННОСТЬ\n\n"+B(v.place,20)+", "+B(v.date_word,60)+"\n\nЯ, "+B(v.pr)+", паспорт "+B(v.pr_pass)+", адрес: "+B(v.pr_addr,40)+",\nнастоящей доверенностью уполномочиваю\n"+B(v.ag)+", паспорт "+B(v.ag_pass)+", адрес: "+B(v.ag_addr,40)+",\n\n"+B(v.powers,70)+",\n\nа равно совершать иные действия, необходимые для исполнения поручения.\nСрок доверенности: "+B(v.term)+". Без права передоверия.\n\nПодпись доверителя: ____________ / "+B(v.pr)+" /\n\nВАЖНО: без даты совершения доверенность ничтожна (ст. 186 ГК РФ). Если срок не указан — действует 1 год. Для банков, нотариальных и отдельных госдействий нужна спецформа или нотариальное удостоверение.";}};
+
+/* ---------- ответы на предписания и запросы ---------- */
+T.resp_fns={t:"Ответ на запрос ФНС",f:[
+F("e","Хозяйство (кто отвечает)","КФХ Иванов"),
+F("inn","ИНН","1650012345"),
+F("ogrn","ОГРН / ОГРНИП","316169000012345"),
+F("addr_e","Адрес","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("ep","Подписант (ФИО, должность)","Иванов Иван Иванович, глава КФХ"),
+F("req_organ","Орган, направивший требование","ИФНС России по Республике Татарстан"),
+F("req_num","Номер требования","№ 12-34/5678"),
+F("req_date","Дата требования","15.08.2026"),
+F("req_scope","Что запрошено","Документы (информация) по финансово-хозяйственной деятельности"),
+F("answer","Суть ответа (свободная форма)","Запрашиваемые документы представляем в полном объёме. Дополнительные пояснения:"),
+F("docs_list","Прилагаемые документы","1) договоры с контрагентами — 3 шт.; 2) УПД; 3) банковские выписки"),
+F("place","Место составления","г. Казань"),
+F("date","Дата составления","29.08.2026")],
+g:function(v){return "ОТВЕТ НА ТРЕБОВАНИЕ "+B(v.req_num,20)+" ОТ "+B(v.req_date,20)+"\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nКому: "+B(v.req_organ)+"\nОт кого: "+B(v.e)+", ИНН "+B(v.inn,12)+", ОГРН/ОГРНИП "+B(v.ogrn,15)+",\nадрес: "+B(v.addr_e,44)+", в лице "+B(v.ep)+"\n\nВ ответ на требование "+B(v.req_num)+" от "+B(v.req_date)+" о представлении: "+B(v.req_scope)+",\n"+B(v.e)+" сообщает следующее:\n\n"+B(v.answer,70)+"\n\nПриложения:\n"+B(v.docs_list,70)+"\n\n"+B(v.ep)+" ____________\n\nПАМЯТКА: срок представления документов (информации) — 5 рабочих дней со дня получения требования (по НДС — 10 рабочих дней). Не успеваете — попросите продление срока по п. 3 ст. 93 НК РФ.";}};
+
+T.resp_rshn={t:"Ответ на предписание Россельхознадзора",f:[
+F("e","Хозяйство (кто отвечает)","КФХ Иванов"),
+F("inn","ИНН","1650012345"),
+F("addr_e","Адрес","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("ep","Подписант (ФИО, должность)","Иванов Иван Иванович, глава КФХ"),
+F("org","Орган, выдавший предписание","Управление Россельхознадзора по Республике Татарстан"),
+F("num","Номер и дата предписания","№ 123 от 01.07.2026"),
+F("viol","Указанное нарушение","Хранение пестицидов без маркировки"),
+F("done","Принятые меры","Нанесена маркировка, назначен ответственный приказом по хозяйству"),
+F("deadline","Срок устранения","до 30.09.2026"),
+F("plan","Дальнейшие мероприятия","Обучение ответственных лиц, внутренний аудит склада"),
+F("docs","Приложения","Фото устранения нарушения, приказ об ответственном, накладные"),
+F("place","Место составления","г. Казань"),
+F("date","Дата составления","29.08.2026")],
+g:function(v){return "ОТЧЁТ ОБ ИСПОЛНЕНИИ ПРЕДПИСАНИЯ "+B(v.num,24)+"\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nКому: "+B(v.org)+"\nОт кого: "+B(v.e)+", ИНН "+B(v.inn,12)+", адрес: "+B(v.addr_e,44)+",\nв лице "+B(v.ep)+"\n\nНа предписание "+B(v.num)+" "+B(v.e)+" сообщает:\n\n1. Указанное нарушение: "+B(v.viol)+".\n2. Принятые меры: "+B(v.done)+".\n3. Срок устранения: "+B(v.deadline)+".\n4. Дальнейшие мероприятия: "+B(v.plan)+".\n\nПриложения: "+B(v.docs,70)+"\n\n"+B(v.ep)+" ____________\n\nПАМЯТКА: приложите документальные подтверждения (фото, приказы, накладные). Ответ направьте в срок, указанный в предписании.";}};
+
+T.resp_git={t:"Ответ на запрос трудовой инспекции (ГИТ)",f:[
+F("e","Хозяйство (кто отвечает)","КФХ Иванов"),
+F("inn","ИНН","1650012345"),
+F("ogrn","ОГРН / ОГРНИП","316169000012345"),
+F("addr_e","Адрес","420000, РТ, г. Казань, ул. Полевая, 1"),
+F("ep","Подписант (ФИО, должность)","Иванов Иван Иванович, глава КФХ"),
+F("req_organ","Орган, направивший запрос","Государственная инспекция труда в Республике Татарстан"),
+F("req_num","Номер запроса","№ 456"),
+F("req_date","Дата запроса","10.08.2026"),
+F("req_scope","Предмет запроса","Сведения об оформлении трудовых отношений в 2026 году"),
+F("answer","Суть ответа (свободная форма)","Трудовые отношения с работниками оформлены в соответствии с ТК РФ. Документы прилагаются:"),
+F("docs_list","Прилагаемые документы","1) трудовые договоры; 2) штатное расписание; 3) табели учёта рабочего времени; 4) расчётные листки"),
+F("place","Место составления","г. Казань"),
+F("date","Дата составления","29.08.2026")],
+g:function(v){return "ОТВЕТ НА ЗАПРОС "+B(v.req_num,20)+" ОТ "+B(v.req_date,20)+"\n\n"+B(v.place,20)+"                                              "+B(v.date,20)+"\n\nКому: "+B(v.req_organ)+"\nОт кого: "+B(v.e)+", ИНН "+B(v.inn,12)+", ОГРН/ОГРНИП "+B(v.ogrn,15)+",\nадрес: "+B(v.addr_e,44)+", в лице "+B(v.ep)+"\n\nВ ответ на запрос "+B(v.req_num)+" от "+B(v.req_date)+" о представлении: "+B(v.req_scope)+",\n"+B(v.e)+" сообщает следующее:\n\n"+B(v.answer,70)+"\n\nПриложения:\n"+B(v.docs_list,70)+"\n\n"+B(v.ep)+" ____________\n\nПАМЯТКА: ответ представляется в срок, указанный в запросе (обычно 10 рабочих дней). Игнорировать запрос нельзя — возможен штраф по ст. 19.7 КоАП РФ.";}};
+
+/* ---------- рендер генератора ---------- */
+var sel=$("doc-type");
+var lastDocName="Документ";
+sel.innerHTML=Object.keys(T).map(function(k){return '<option value="'+k+'">'+T[k].t+'</option>';}).join("");
+function renderForm(){
+  var t=T[sel.value];
+  $("doc-form").innerHTML=t.f.map(function(f){
+    return '<label class="label">'+f.label+'</label><input class="input" id="f_'+f.id+'" placeholder="'+f.ph+'">';
+  }).join("");
+  $("doc-preview").hidden=true;$("doc-actions").hidden=true;
+  if(window.KFHReq){KFHReq.fillEmpty(false);}
+}
+sel.addEventListener("change",renderForm);renderForm();
+
+window.KFHInnGetFields=function(){return T[sel.value].f;};
+window.KFHInnSet=function(id,val){var el=document.getElementById("f_"+id);if(el){el.value=val;}};
+
+/* открыть шаблон из сценариев: сразу во вкладке «Документы» */
+function openTpl(k){
+  sel.value=k;renderForm();
+  go("docs");
+}
+
+$("gen-btn").addEventListener("click",function(){
+  var t=T[sel.value];var v={};
+  t.f.forEach(function(f){v[f.id]=($("f_"+f.id)||{}).value||"";});
+  $("doc-preview").textContent=t.g(v);
+  $("doc-preview").hidden=false;$("doc-actions").hidden=false;
+  lastDocName=T[sel.value].t;
+  var n=parseInt(localStorage.getItem(LEGAL_COUNT_KEY)||"0",10)+1;
+  localStorage.setItem(LEGAL_COUNT_KEY,String(n));
+});
+
+/* Печать / PDF */
+$("print-btn").addEventListener("click",function(){
+  var w=window.open("","","height=800,width=900");
+  w.document.write("<html><head><meta charset='utf-8'><title>Печать</title><style>body{font-family:Arial;font-size:13px}</style></head><body><pre style='white-space:pre-wrap'>"+esc($("doc-preview").textContent)+"</pre></body></html>");
+  w.document.close();w.print();
+});
+
+/* Скачивание в Word: настоящий .docx */
+$("word-btn").addEventListener("click",function(){
+  var text=$("doc-preview").textContent;
+  var name=safeFileName(lastDocName);
+  KFHDocx.download(text,name);
+});
+
+/* сохранение в архив (общая функция из save-archive.js) */
+$("archive-btn").addEventListener("click",async function(){
+  var text=$("doc-preview").textContent;
+  if(!text){alert("Сначала сформируйте документ.");return;}
+  var ok=await KFH.saveDocToArchive({name:lastDocName,doc_type:KFH.archiveType(sel.value),text:text});
+  if(ok)alert("Документ сохранён в архив. Смотрите раздел «Архив хозяйства».");
+});
+
+/* ---------- FAQ (единый, без дублей с кадрами) ---------- */
+var FAQ=[
+ ["Можно ли сдать с/х землю в субаренду?","Только если разрешено договором аренды и срок субаренды не превышает срок основного договора."],
+ ["Что такое преимущественное право при продаже/аренде земли?","Собственник сначала предлагает участок субъекту РФ/муниципалитету; действующий арендатор имеет преимущественное право на новый срок аренды."],
+ ["Нужно ли регистрировать аренду с/х земли?","Да, при сроке договора от 1 года — регистрация в Росреестре."],
+ ["Что такое УПД и зачем он нужен?","Универсальный передаточный документ заменяет накладную и счёт-фактуру; подтверждает передачу продукции для учёта и споров."],
+ ["Нужны ли сертификаты на зерно и овощи?","На зерно — декларация соответствия (ТР ТС 015/2011); на часть продукции — фитосанитарный сертификат Россельхознадзора."],
+ ["Нужна ли онлайн-касса при продаже населению?","Да, вне рынков/ярмарок выходного дня; при интернет-продажах — обязательна."],
+ ["Покупатель не платит: первые шаги?","Зафиксировать передачу (акт/УПД), претензия, выждать срок, иск в арбитраж."],
+ ["Чем ГПХ отличается от трудового договора?","ГПХ — результат и акт; трудовой — функция, график, регулярная оплата. Ошибка ведёт к переквалификации."],
+ ["Можно ли работать с самозанятым вместо работника?","Да, если задача разовая и нет признаков трудовых отношений; чек из «Мой налог» при каждой оплате."],
+ ["Нужно ли уведомлять Роскомнадзор о персональных данных?","Да, в большинстве случаев подаётся уведомление через портал РКН."],
+ ["Сколько штраф за иностранца без оформления?","До 800 тыс. руб. за каждого работника для юрлиц (ст. 18.15 КоАП РФ); ИП и должностным лицам 25–50 тыс. руб."],
+ ["Пришла проверка: шаги и сроки ответа?","Шаги: 1) проверить удостоверение и приказ о проверке; 2) не подписывать вслепую, вписывать замечания в акт; 3) запросить копии актов и приложений; 4) подготовить письменный ответ. Сроки: требования ФНС — 5 рабочих дней (по НДС — 10, продление по п. 3 ст. 93 НК РФ); предписания — срок указан в документе; запросы ГИТ — обычно 10 рабочих дней. Игнорировать нельзя: штраф по ст. 19.7 КоАП РФ и ужесточение мер."],
+ ["Что делать, если владелец недоступен 1–2 месяца?","Заранее: доверенность, доступ к банк-клиенту, конверт с паролями, календарь операций, документы в архиве."]
+];
+$("faq-list").innerHTML=FAQ.map(function(x){return '<div class="acc"><button class="acc-head">'+x[0]+'<span class="plus">+</span></button><div class="acc-body"><p style="margin:0">'+x[1]+'</p></div></div>';}).join("");
+</script>
+
+<!-- Автозаполнение по ИНН + реквизиты сторон + DOCX + сохранение в архив -->
+<script src="dadata.js"></script>
+<script src="req.js"></script>
+<script src="download-docx.js"></script>
+<script src="save-archive.js"></script>
+
+<!-- Общий фундамент: меню, логотип→главная, вкладки -->
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

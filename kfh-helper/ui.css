@@ -1,0 +1,55 @@
+/* ============================================
+   КФХ-Помощник · общий фундамент (ui.css)
+   1) Нижнее меню + бейджи
+   2) Шторка «Ещё» со всеми разделами
+   3) Лента вкладок модулей (телефон: липкая, десктоп: статичная)
+   4) Визитная карточка модуля
+   5) Свёрнутые группы полей (details)
+   Меняем здесь — меняется на всех страницах сразу.
+   ============================================ */
+
+/* отступ под фиксированное нижнее меню */
+body.kfh-has-nav{padding-bottom:84px}
+
+/* ---------- нижнее меню ---------- */
+.kfh-bottom-nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #e3e7ec;display:flex;z-index:60;box-shadow:0 -4px 14px rgba(15,23,42,.06)}
+.kfh-nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px calc(8px + env(safe-area-inset-bottom));background:none;border:none;font-family:inherit;font-size:13px;font-weight:800;color:#6b7280;cursor:pointer;text-decoration:none}
+.kfh-nav-btn.active{color:#15803d}
+.kfh-nav-ico-wrap{position:relative;display:inline-block}
+.kfh-nav-ico{font-size:24px;line-height:1}
+.kfh-badge{position:absolute;top:-8px;right:-13px;min-width:19px;height:19px;border-radius:999px;background:#b91c1c;color:#fff;font-size:11px;font-weight:900;display:grid;place-items:center;padding:0 4px}
+
+/* ---------- шторка «Ещё» ---------- */
+.kfh-sheet{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:70;display:flex;align-items:flex-end}
+.kfh-sheet[hidden]{display:none}
+.kfh-sheet-card{width:100%;background:#f7f8fa;border-radius:22px 22px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom))}
+.kfh-sheet-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:17px;font-weight:800;color:#0f172a}
+.kfh-sheet-close{min-width:42px;height:42px;border-radius:10px;border:1px solid #d3d9df;background:#fff;font-size:16px;font-weight:800;cursor:pointer;color:#0f172a}
+.kfh-sheet-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.kfh-sheet-btn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 6px;background:#fff;border:1px solid #e3e7ec;border-radius:14px;min-height:92px;text-decoration:none;color:#0f172a}
+.kfh-sheet-ico{font-size:30px}
+.kfh-sheet-t{font-size:14px;font-weight:800;text-align:center;line-height:1.25}
+
+/* ---------- лента вкладок модулей ----------
+   Телефон: липнет к верху экрана, переключение между разделами
+   из любой вкладки. Десктоп: обычная лента-вкладки.          */
+.kfh-scrnav{display:flex;gap:8px;overflow-x:auto;padding:10px 0;margin-top:10px;-webkit-overflow-scrolling:touch}
+.kfh-scrnav.mobile{position:sticky;top:0;z-index:40;background:#e7efe9}
+.kfh-scrbtn{flex:0 0 auto;min-height:44px;padding:10px 18px;border-radius:999px;border:1px solid #cfd8d0;background:#fff;font-family:inherit;font-size:15px;font-weight:800;color:#0f172a;cursor:pointer}
+.kfh-scrbtn.active{background:#16a34a;border-color:#16a34a;color:#fff}
+
+/* ---------- визитная карточка модуля ----------
+   Название + одна строка пользы. Ставится вверху каждого модуля
+   на всех устройствах (без тегов и пилюль).                    */
+.biz-card{margin-top:14px;padding:18px 20px;background:#f7f8fa;border:1px solid #edeff2;border-radius:22px;box-shadow:0 1px 3px rgba(15,23,42,.05)}
+.biz-card h1{margin:0;font-size:26px;font-weight:900;color:#14532d}
+.biz-card p{margin:6px 0 0;color:#6b7280;font-size:15px}
+
+/* ---------- свёрнутые группы полей (details) ----------
+   Длинные блоки форм скрыты по умолчанию, раскрываются по тапу. */
+details.kfh-det{background:#fff;border:1px solid #e3e7ec;border-radius:12px;margin-top:12px}
+details.kfh-det summary{padding:14px 16px;font-weight:800;font-size:15px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.kfh-det summary::-webkit-details-marker{display:none}
+details.kfh-det summary:after{content:"▸";font-size:18px;transition:160ms}
+details.kfh-det[open] summary:after{transform:rotate(90deg)}
+details.kfh-det .kfh-det-body{padding:0 16px 16px}

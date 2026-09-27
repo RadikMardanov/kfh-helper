@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Заявка на консультацию — КФХ-Помощник</title>
+<meta name="description" content="Консультации по субсидиям, кадровым и юридическим документам, экономике хозяйства. Сервис готовится к запуску — оставьте заявку, и мы свяжемся с вами в числе первых." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--amber:#92610e;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:760px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:6px}
+.tile{padding:14px;background:#fff;border:1px solid var(--inner-border);border-radius:12px}
+.tile b{display:block;margin-bottom:4px;font-size:15px}
+.tile p{margin:0;color:var(--muted);font-size:14px}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.label .opt{color:var(--muted);font-weight:500}
+.input,.select,.textarea{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.textarea{min-height:90px;resize:vertical}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.check-row{display:flex;align-items:flex-start;gap:10px;margin-top:16px;font-size:15px;color:var(--muted)}
+.check-row input{width:22px;height:22px;margin-top:2px;accent-color:var(--green);flex-shrink:0}
+.msg{display:none;margin-top:14px;padding:12px 14px;border-radius:10px;font-size:15px;font-weight:600}
+.msg.error{display:block;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+.msg.success{display:block;background:#f0fdf4;border:1px solid #bbf7d0;color:#166534}
+.count-pill{display:inline-flex;padding:7px 15px;border-radius:999px;background:#fff;border:1px solid var(--inner-border);font-size:14px;font-weight:800;color:var(--muted)}
+.ok-box{margin-top:14px;padding:14px 16px;background:var(--green-soft);border:1px solid rgba(22,163,74,.18);border-radius:12px;color:#14532d;font-size:15px}
+.warn-box{margin-top:14px;padding:14px 16px;background:var(--amber-soft);border:1px solid var(--amber-border);border-radius:12px;color:#6d4d10;font-size:15px}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+@media (max-width:640px){.card{padding:16px 14px}.btn-row .btn{flex:1 1 100%}}
+@media (max-width:420px){.tiles{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <!-- визитная карточка модуля -->
+  <section class="biz-card">
+    <h1>✉️ Заявка на консультацию</h1>
+    <p>Короткие сессии со специалистом по вашей ситуации: очно или по телефону/мессенджеру. Оставьте заявку — вы в очереди, свяжемся при запуске.</p>
+  </section>
+
+  <section class="card">
+    <h2 class="card-title">Чем поможет консультация</h2>
+    <div class="tiles">
+      <div class="tile"><b>🌾 Субсидии и гранты</b><p>Подбор мер, список документов, сопровождение заявки.</p></div>
+      <div class="tile"><b>🧾 Кадровые документы</b><p>Проверка договоров, приказов, сезонных и иностранных работников.</p></div>
+      <div class="tile"><b>⚖️ Юридический вопрос</b><p>Неоплата, проверки, земельные споры, возврат субсидии.</p></div>
+      <div class="tile"><b>📊 Экономика хозяйства</b><p>Разбор расчётов, техкарта, справка для банка или кредита.</p></div>
+    </div>
+
+    <h2 class="card-title" style="margin-top:20px">Оставить заявку в очередь</h2>
+    <p class="hint" style="margin:0 0 6px">Занимает 30 секунд. Контакт нужен, чтобы связаться с вами при запуске.</p>
+
+    <label class="label" for="lead-topic">Тема вопроса</label>
+    <select class="select" id="lead-topic">
+      <option>Субсидии и гранты</option>
+      <option>Кадровые документы</option>
+      <option>Юридический вопрос</option>
+      <option>Экономика хозяйства</option>
+      <option>Кооперация и сбыт</option>
+      <option>Другое</option>
+    </select>
+
+    <label class="label" for="lead-contact">Телефон или Telegram</label>
+    <input class="input" id="lead-contact" placeholder="Например: +7 900 000-00-00 или @fermer" />
+
+    <label class="label" for="lead-comment">Комментарий <span class="opt">(необязательно)</span></label>
+    <textarea class="textarea" id="lead-comment" placeholder="Коротко опишите ситуацию: например, «хочу подать на Агростартап, не знаю, пройдёт ли бизнес-план»"></textarea>
+
+    <div class="check-row">
+      <input type="checkbox" id="lead-consent" />
+      <span>Согласен на обработку указанных данных для связи по заявке. Не отправляйте паспортные данные и другую конфиденциальную информацию.</span>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="lead-btn">Оставить заявку</button>
+      <span class="count-pill" id="lead-count"></span>
+    </div>
+
+    <p class="msg" id="lead-msg"></p>
+
+    <div class="ok-box">📈 Каждая заявка фиксируется в общей очереди. По количеству заявок и темам мы понимаем, какие консультации запускать первыми.</div>
+    <div class="warn-box">⚠️ Пока сервис в запуске, сложные вопросы можно решать через специалистов вашего района: консультационные центры АПК, «Мой бизнес», юристы на аутсорсе.</div>
+  </section>
+
+  <div class="footer">
+    <p>© <span id="year"></span> <a href="index.html">КФХ-Помощник</a> · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p>Оставление заявки не создаёт обязательств со стороны сервиса до запуска консультаций.</p>
+  </div>
+</div>
+
+<script>
+var LEADS_KEY="kfh_leads_v1";
+var CLICK_KEY="kfh_req_clicks_v1";
+function $(id){return document.getElementById(id);}
+$("year").textContent=new Date().getFullYear();
+
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+function sb(){return window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);}
+
+function demoLeads(){try{return JSON.parse(localStorage.getItem(LEADS_KEY))||[];}catch(e){return[];}}
+function updateCount(){
+  var n=demoLeads().length;
+  $("lead-count").textContent= supabaseReady() ? "Заявки пишутся в общую очередь" : "Заявок в этом браузере: "+n;
+}
+updateCount();
+
+$("lead-btn").addEventListener("click",async function(){
+  var msg=$("lead-msg");
+  msg.className="msg";
+  var topic=$("lead-topic").value;
+  var contact=$("lead-contact").value.trim();
+  var comment=$("lead-comment").value.trim();
+  var consent=$("lead-consent").checked;
+
+  if(!contact){msg.textContent="Укажите телефон или Telegram, чтобы мы могли связаться.";msg.className="msg error";return;}
+  if(!consent){msg.textContent="Нужно дать согласие на обработку данных.";msg.className="msg error";return;}
+
+  /* метрика клика */
+  var c=parseInt(localStorage.getItem(CLICK_KEY)||"0",10)+1;
+  localStorage.setItem(CLICK_KEY,String(c));
+
+  if(supabaseReady()){
+    try{
+      var res=await sb().from("leads").insert({topic:topic,contact:contact,comment:comment});
+      if(res.error){msg.textContent="Ошибка: "+res.error.message;msg.className="msg error";return;}
+      msg.textContent="Заявка принята! Вы в очереди. Свяжемся при запуске консультаций.";
+      msg.className="msg success";
+    }catch(e){
+      msg.textContent="Ошибка соединения с сервером: "+e.message;msg.className="msg error";return;
+    }
+  }else{
+    var arr=demoLeads();
+    arr.push({topic:topic,contact:contact,comment:comment,at:Date.now()});
+    localStorage.setItem(LEADS_KEY,JSON.stringify(arr));
+    msg.textContent="Заявка принята (демо-режим: хранится в этом браузере). После подключения Supabase заявки будут попадать в общую очередь.";
+    msg.className="msg success";
+  }
+  $("lead-contact").value="";$("lead-comment").value="";$("lead-consent").checked=false;
+  updateCount();
+});
+</script>
+
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Архив хозяйства — КФХ-Помощник</title>
+<meta name="description" content="Архив хозяйства: реестр документов КФХ с файлами, поиском, редактированием и печатью подборки для банка, субсидии или аккредитации." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--red:#b91c1c;--amber:#92610e;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input,.select{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus,.select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-danger{background:#fff;border-color:#fecaca;color:var(--red)}.btn-danger:hover{background:#fef2f2}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.ok-box{margin-top:14px;padding:14px 16px;background:var(--green-soft);border:1px solid rgba(22,163,74,.18);border-radius:12px;color:#14532d;font-size:15px}
+.file-box{margin-top:16px;padding:14px 16px;border:2px dashed #cfd8d0;border-radius:12px;background:#fff}
+.file-name{margin-top:8px;font-size:14px;font-weight:700;color:var(--green-dark);word-break:break-all}
+.count-pill{display:inline-flex;padding:7px 15px;border-radius:999px;background:#fff;border:1px solid var(--inner-border);font-size:14px;font-weight:800;color:var(--muted)}
+.tbl-wrap{overflow-x:auto;margin-top:16px;border-radius:12px}
+.tbl{width:100%;border-collapse:collapse;font-size:15px;min-width:860px}
+.tbl th,.tbl td{border:1px solid var(--inner-border);padding:9px 10px;text-align:left;background:#fff;vertical-align:top}
+.tbl th{background:var(--green-soft);color:var(--green-deep)}
+.tbl .btn{min-height:38px;padding:6px 11px;font-size:14px;white-space:nowrap}
+.tbl .filelink{color:var(--green-dark);font-weight:700;cursor:pointer;text-decoration:underline;background:none;border:none;font-size:14px;padding:0}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+#print-report{display:none}
+@media print{
+  body>*:not(#print-report){display:none!important}
+  #print-report{display:block;font-family:var(--font);color:#000;padding:20px}
+  #print-report h2{margin:0 0 6px}#print-report table{width:100%;border-collapse:collapse;font-size:12px}
+  #print-report th,#print-report td{border:1px solid #999;padding:6px 8px;text-align:left;vertical-align:top}
+}
+@media (max-width:640px){.card{padding:16px 14px}.grid-2{grid-template-columns:1fr}.btn-row .btn{flex:1 1 100%}#printBtn{white-space:normal;text-align:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <!-- визитная карточка модуля -->
+  <section class="biz-card">
+    <h1>🗂 Архив хозяйства</h1>
+    <p>Реестр документов с файлами: договоры, акты, приказы, заявки. Быстро поднять историю и распечатать подборку для банка, субсидии или аккредитации.</p>
+  </section>
+
+  <!-- лента вкладок: телефон (липкая) и десктоп -->
+  <div class="kfh-scrnav" id="scrnav"></div>
+
+  <!-- ================= ДОБАВИТЬ / РЕДАКТИРОВАТЬ ================= -->
+  <section class="kfh-scr" data-scr="add" data-title="Добавить">
+    <div class="card">
+      <h2 class="card-title" id="form-title">Добавить документ в реестр</h2>
+      <p class="hint" style="margin:0 0 6px">Файлы хранятся в вашем аккаунте и видны только вам.</p>
+
+      <div class="grid-2">
+        <div>
+          <label class="label" for="docType">Тип документа</label>
+          <select class="select" id="docType">
+            <option>Договор</option>
+            <option>Акт</option>
+            <option>Счёт / УПД / накладная</option>
+            <option>Приказ</option>
+            <option>Заявление</option>
+            <option>Субсидия / грант</option>
+            <option>Претензия / суд</option>
+            <option>Другое</option>
+          </select>
+        </div>
+        <div>
+          <label class="label" for="docDate">Дата документа</label>
+          <input class="input" type="date" id="docDate" />
+        </div>
+      </div>
+
+      <label class="label" for="docName">Название / номер *</label>
+      <input class="input" id="docName" placeholder="Например: Договор № 12 от 01.07.2026" />
+
+      <div class="grid-2">
+        <div>
+          <label class="label" for="docCounter">Контрагент / орган <span style="color:var(--muted);font-weight:500">(необязательно)</span></label>
+          <input class="input" id="docCounter" placeholder="Например: ООО «Заготовитель»" />
+        </div>
+        <div>
+          <label class="label" for="docComment">Комментарий <span style="color:var(--muted);font-weight:500">(необязательно)</span></label>
+          <input class="input" id="docComment" placeholder="Например: поставка пшеницы 20 т, оплата 30 дней" />
+        </div>
+      </div>
+
+      <div class="file-box">
+        <label class="label" style="margin-top:0">📎 Файл документа <span style="color:var(--muted);font-weight:500">(необязательно)</span></label>
+        <input type="file" id="docFile" style="display:none" accept=".pdf,.jpg,.jpeg,.png,.xlsx,.xls,.doc,.docx" />
+        <button class="btn btn-secondary" id="file-btn">Выбрать файл</button>
+        <div class="file-name" id="file-name"></div>
+        <p class="hint">PDF, JPG, PNG, Excel, Word. При редактировании можно заменить файл на новый.</p>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn btn-primary" id="addBtn">Добавить в реестр</button>
+        <button class="btn btn-secondary" id="cancelBtn" hidden>Отмена</button>
+      </div>
+      <p class="hint">* обязательное поле. Персональные данные работников в реестр не вносите.</p>
+    </div>
+  </section>
+
+  <!-- ================= РЕЕСТР ================= -->
+  <section class="kfh-scr" data-scr="list" data-title="Реестр">
+    <div class="card">
+      <h2 class="card-title">Реестр документов</h2>
+      <input class="input" id="archSearch" placeholder="Поиск: номер, контрагент, комментарий…" />
+      <div class="btn-row">
+        <span class="count-pill" id="countPill">Документов: 0</span>
+        <button class="btn btn-primary" id="printBtn" style="margin-left:auto">Печать реестра (банк / субсидия / аккредитация)</button>
+      </div>
+      <div class="tbl-wrap" id="tblWrap"></div>
+      <div class="ok-box">💡 Когда придёт запрос от банка, министерства или поставщика — распечатайте реестр и приложите копии документов. Порядок в бумагах экономит недели.</div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p>© <span id="year"></span> <a href="index.html">КФХ-Помощник</a> · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p>Реестр является вспомогательным инструментом учёта и не заменяет первичные документы.</p>
+  </div>
+</div>
+
+<div id="print-report"></div>
+
+<script>
+window.KFH_SCREEN_OPTS={mobile:"add",desktop:"add"};
+
+var ARCH_KEY="kfh_archive_v1";
+var SESSION_KEY="kfh_helper_demo_session_v1";
+function $(id){return document.getElementById(id);}
+$("year").textContent=new Date().getFullYear();
+function go(id){if(window.KFH&&KFH.goScreen)KFH.goScreen(id);}
+
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+function sb(){return window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);}
+
+var docsCache=[];
+var dbMode=false;
+var currentUserId=null;
+var editId=null;
+var currentFile=null;
+
+function getDocs(){try{return JSON.parse(localStorage.getItem(ARCH_KEY))||[];}catch(e){return[];}}
+function saveDocs(v){localStorage.setItem(ARCH_KEY,JSON.stringify(v));}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function fmtDate(iso){if(!iso)return "без даты";var d=new Date(iso+"T00:00:00");if(isNaN(d))return "без даты";return d.toLocaleDateString("ru-RU");}
+function norm(d){return {id:d.id,type:d.type||d.doc_type,name:d.name,date:d.date||d.doc_date,counter:d.counter,comment:d.comment,file_name:d.file_name||null,file_path:d.file_path||null};}
+
+/* ---------- рендер таблицей ---------- */
+function render(){
+  var q=($("archSearch").value||"").toLowerCase().trim();
+  var docs=docsCache.map(norm).slice().sort(function(a,b){return (b.date||"").localeCompare(a.date||"");});
+  if(q){docs=docs.filter(function(d){return ((d.type||"")+" "+(d.name||"")+" "+(d.counter||"")+" "+(d.comment||"")).toLowerCase().indexOf(q)>=0;});}
+  $("countPill").textContent="Документов: "+docsCache.length+(q?" (найдено: "+docs.length+")":"");
+  var box=$("tblWrap");
+  if(!docs.length){box.innerHTML='<p class="hint" style="margin-top:14px">'+(q?"Ничего не найдено. Попробуйте другое слово.":"Реестр пока пуст. Добавьте первый документ во вкладке «Добавить».")+'</p>';return;}
+  var rows=docs.map(function(d,i){
+    var fileCell="—";
+    if(d.file_path){fileCell='<button class="filelink" onclick="openFile(\''+d.id+'\')">📎 открыть</button>';}
+    else if(d.file_name){fileCell=esc(d.file_name);}
+    return "<tr><td>"+(i+1)+"</td><td>"+esc(d.type)+"</td><td><b>"+esc(d.name)+"</b></td><td>"+fmtDate(d.date)+"</td><td>"+esc(d.counter||"—")+"</td><td>"+esc(d.comment||"—")+"</td><td>"+fileCell+"</td>"+
+      "<td style='white-space:nowrap'><button class='btn btn-secondary' onclick='editDoc(\""+d.id+"\")'>Изменить</button> <button class='btn btn-danger' onclick='delDoc(\""+d.id+"\")'>Удалить</button></td></tr>";
+  }).join("");
+  box.innerHTML='<table class="tbl"><tr><th>№</th><th>Тип</th><th>Название / номер</th><th>Дата</th><th>Контрагент</th><th>Комментарий</th><th>Файл</th><th>Действия</th></tr>'+rows+'</table>';
+}
+
+/* ---------- файл ---------- */
+$("file-btn").addEventListener("click",function(){$("docFile").click();});
+$("docFile").addEventListener("change",function(){
+  var f=this.files&&this.files[0];
+  currentFile=f||null;
+  $("file-name").textContent=f?("Выбран: "+f.name+" ("+Math.round(f.size/1024)+" КБ)"):"";
+});
+
+/* ---------- сброс формы ---------- */
+function resetForm(){
+  editId=null;currentFile=null;
+  $("docFile").value="";$("file-name").textContent="";
+  $("docName").value="";$("docCounter").value="";$("docComment").value="";$("docDate").value="";
+  $("docType").value="Договор";
+  $("addBtn").textContent="Добавить в реестр";
+  $("cancelBtn").hidden=true;
+  $("form-title").textContent="Добавить документ в реестр";
+}
+$("cancelBtn").addEventListener("click",resetForm);
+
+/* ---------- добавить / сохранить изменения ---------- */
+$("addBtn").addEventListener("click",async function(){
+  var name=$("docName").value.trim();
+  if(!name){alert("Укажите название или номер документа.");return;}
+  var doc={
+    type:$("docType").value,name:name,
+    date:$("docDate").value||"",
+    counter:$("docCounter").value.trim(),
+    comment:$("docComment").value.trim()
+  };
+
+  if(dbMode){
+    var filePath=null,fileName=null;
+    if(currentFile){
+      var path=currentUserId+"/"+Date.now()+"_"+currentFile.name;
+      var up=await sb().storage.from("archive-files").upload(path,currentFile);
+      if(up.error){alert("Ошибка загрузки файла: "+up.error.message);return;}
+      filePath=path;fileName=currentFile.name;
+    }
+    if(editId){
+      var old=docsCache.find(function(x){return String(x.id)===String(editId);});
+      var payload={doc_type:doc.type,name:doc.name,doc_date:doc.date||null,counter:doc.counter,comment:doc.comment};
+      if(filePath){
+        payload.file_path=filePath;payload.file_name=fileName;
+        if(old&&old.file_path){await sb().storage.from("archive-files").remove([old.file_path]);}
+      }
+      var r=await sb().from("archive_docs").update(payload).eq("id",editId).select().single();
+      if(r.error){alert("Ошибка сохранения: "+r.error.message);return;}
+      docsCache=docsCache.map(function(x){return String(x.id)===String(editId)?r.data:x;});
+    }else{
+      var payload2={user_id:currentUserId,doc_type:doc.type,name:doc.name,doc_date:doc.date||null,counter:doc.counter,comment:doc.comment};
+      if(filePath){payload2.file_path=filePath;payload2.file_name=fileName;}
+      var r2=await sb().from("archive_docs").insert(payload2).select().single();
+      if(r2.error){alert("Ошибка сохранения: "+r2.error.message);return;}
+      docsCache.unshift(r2.data);
+    }
+  }else{
+    if(editId){
+      docsCache=docsCache.map(function(x){
+        if(String(x.id)===String(editId)){
+          x.type=doc.type;x.name=doc.name;x.date=doc.date;x.counter=doc.counter;x.comment=doc.comment;
+          if(currentFile)x.file_name=currentFile.name;
+        }
+        return x;
+      });
+      saveDocs(docsCache);
+    }else{
+      var docs=getDocs();
+      docs.push({id:Date.now(),type:doc.type,name:doc.name,date:doc.date,counter:doc.counter,comment:doc.comment,file_name:currentFile?currentFile.name:null});
+      saveDocs(docs);docsCache=docs;
+    }
+  }
+
+  var wasEdit=Boolean(editId);
+  resetForm();
+  render();
+  go("list");
+  alert(wasEdit?"Изменения сохранены.":(dbMode?"Документ добавлен в реестр и сохранён в аккаунте.":"Документ добавлен в реестр."));
+});
+
+/* ---------- редактировать ---------- */
+function editDoc(id){
+  var d=docsCache.find(function(x){return String(x.id)===String(id);});
+  if(!d)return;
+  var n=norm(d);
+  $("docType").value=n.type;
+  $("docDate").value=n.date&&n.date!=="без даты"?n.date:"";
+  $("docName").value=n.name;
+  $("docCounter").value=n.counter||"";
+  $("docComment").value=n.comment||"";
+  $("file-name").textContent=n.file_name?("Текущий файл: "+n.file_name+" (можно выбрать новый)"):"";
+  currentFile=null;$("docFile").value="";
+  editId=String(id);
+  $("addBtn").textContent="Сохранить изменения";
+  $("cancelBtn").hidden=false;
+  $("form-title").textContent="Редактирование записи";
+  go("add");
+}
+
+/* ---------- удалить ---------- */
+async function delDoc(id){
+  if(!confirm("Удалить запись из реестра?"))return;
+  if(dbMode){
+    var old=docsCache.find(function(x){return String(x.id)===String(id);});
+    if(old&&old.file_path){await sb().storage.from("archive-files").remove([old.file_path]);}
+    var r=await sb().from("archive_docs").delete().eq("id",id);
+    if(r.error){alert("Ошибка: "+r.error.message);return;}
+    docsCache=docsCache.filter(function(d){return String(d.id)!==String(id);});
+  }else{
+    saveDocs(getDocs().filter(function(d){return String(d.id)!==String(id);}));
+    docsCache=getDocs();
+  }
+  if(String(editId)===String(id))resetForm();
+  render();
+}
+
+/* ---------- открыть файл (подписанная ссылка на 1 час) ---------- */
+async function openFile(id){
+  var d=docsCache.find(function(x){return String(x.id)===String(id);});
+  if(!d||!d.file_path)return;
+  var r=await sb().storage.from("archive-files").createSignedUrl(d.file_path,3600);
+  if(r.error){alert("Не удалось открыть файл: "+r.error.message);return;}
+  window.open(r.data.signedUrl,"_blank");
+}
+
+/* ---------- поиск ---------- */
+$("archSearch").addEventListener("input",render);
+
+/* ---------- печать ---------- */
+$("printBtn").addEventListener("click",function(){
+  var docs=docsCache.map(norm).slice().sort(function(a,b){return (b.date||"").localeCompare(a.date||"");});
+  if(!docs.length){alert("Реестр пуст. Добавьте документы.");return;}
+  var farm=esc(localStorage.getItem("kfh_agro_farm_v1")||"Хозяйство не указано");
+  var html="<h2>Реестр документов хозяйства</h2>"+
+    "<p>Хозяйство: "+farm+"</p>"+
+    "<p>Дата формирования: "+new Date().toLocaleDateString("ru-RU")+"</p>"+
+    "<p>Документов в реестре: "+docs.length+"</p>"+
+    "<table><tr><th>№</th><th>Тип</th><th>Название / номер</th><th>Дата</th><th>Контрагент / орган</th><th>Комментарий</th><th>Файл</th></tr>"+
+    docs.map(function(d,i){return "<tr><td>"+(i+1)+"</td><td>"+esc(d.type)+"</td><td>"+esc(d.name)+"</td><td>"+fmtDate(d.date)+"</td><td>"+esc(d.counter||"—")+"</td><td>"+esc(d.comment||"—")+"</td><td>"+esc(d.file_name||"—")+"</td></tr>";}).join("")+
+    "</table><p style='margin-top:10px;font-size:11px'>Сформировано сервисом «КФХ-Помощник». Реестр является вспомогательным инструментом учёта и не заменяет первичные документы.</p>";
+  $("print-report").innerHTML=html;
+  window.print();
+});
+
+/* ---------- старт ---------- */
+(async function init(){
+  if(supabaseReady()){
+    try{
+      var s=await sb().auth.getSession();
+      if(s.data.session){
+        dbMode=true;
+        currentUserId=s.data.session.user.id;
+        var r=await sb().from("archive_docs").select("*");
+        if(!r.error){docsCache=r.data||[];}
+        render();
+        return;
+      }
+    }catch(e){}
+  }
+  docsCache=getDocs();
+  render();
+})();
+</script>
+
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

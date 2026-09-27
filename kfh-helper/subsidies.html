@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Субсидии и гранты — КФХ-Помощник</title>
+<meta name="description" content="Субсидии, гранты и меры поддержки АПК Республики Татарстан: точный автокомплаенс по обязательным требованиям, закладки интересных мер с синхронизацией между устройствами, конструктор бизнес-плана, календарь подачи." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+<script src="profile-link.js"></script>
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--red:#b91c1c;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:1000px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 14px}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input,.select{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus,.select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-wrap{white-space:normal;text-align:center;word-break:break-word}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.ok-box{margin-top:14px;padding:14px 16px;background:var(--green-soft);border:1px solid rgba(22,163,74,.18);border-radius:12px;color:#14532d;font-size:15px}
+.warn-box{margin-top:14px;padding:14px 16px;background:var(--amber-soft);border:1px solid var(--amber-border);border-left:5px solid #eab308;border-radius:12px;color:#6d4d10;font-size:15px}
+.chip-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;position:sticky;top:60px;z-index:40;background:var(--page-bg);padding:8px 2px;margin:0 0 14px;scrollbar-width:none}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;min-height:44px;padding:10px 17px;border-radius:12px;border:1px solid #cfd8d0;background:#fff;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
+.chip.active{background:var(--green);border-color:var(--green);color:#fff}
+.acc{background:#fff;border:1px solid var(--inner-border);border-radius:12px;margin-bottom:10px;overflow:hidden}
+.acc-head{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;padding:15px 16px;background:none;border:none;font:inherit;font-weight:700;font-size:16px;color:var(--ink);cursor:pointer;text-align:left}
+.acc-head:hover{background:#f6faf7}
+.plus{width:28px;height:28px;border-radius:8px;background:var(--green-soft);color:var(--green-dark);display:grid;place-items:center;font-weight:900;flex-shrink:0}
+.acc-body{display:none;padding:0 16px 16px;color:var(--muted);font-size:15px}
+.acc-body h4{margin:12px 0 6px;color:var(--ink);font-size:15px}
+.acc-body ul{margin:0 0 8px;padding-left:18px}
+.acc-body ul li{margin-bottom:4px}
+.tagline{display:inline-flex;margin-bottom:8px;padding:5px 12px;border-radius:999px;background:var(--green-soft);color:var(--green-dark);font-size:13px;font-weight:800}
+.preview{margin-top:14px;padding:18px;background:#fff;border:1px solid var(--inner-border);border-radius:12px;white-space:pre-wrap;font-size:15px}
+ul.lst{margin:0 0 8px;padding-left:20px}ul.lst li{margin-bottom:6px;font-size:15px}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+.bmk-on{background:var(--green-soft);border-color:rgba(22,163,74,.45);color:var(--green-deep)}
+.bmk-on:hover{background:#dcf3e4}
+.cmp-block{margin-top:12px;padding:14px 16px;background:#fff;border:1px solid var(--inner-border);border-radius:12px}
+.cmp-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap}
+.cmp-label{font-size:14px;color:var(--muted);font-weight:600}
+.cmp-percent{font-size:19px;font-weight:900;white-space:nowrap}
+.cmp-green{color:#16a34a}.cmp-yellow{color:#d97706}.cmp-red{color:#b91c1c}
+.cmp-bar{height:10px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-bottom:12px}
+.cmp-fill{height:100%;border-radius:999px;transition:width .5s ease}
+.cmp-fill.green{background:#16a34a}.cmp-fill.yellow{background:#d97706}.cmp-fill.red{background:#b91c1c}
+.cmp-list{list-style:none;padding:0;margin:0;font-size:14px}
+.cmp-list li{margin-bottom:6px;display:flex;gap:8px;align-items:flex-start;line-height:1.4}
+.cmp-list li:last-child{margin-bottom:0}
+.cmp-ok{color:#16a34a}.cmp-fail{color:#b91c1c}.cmp-manual{color:var(--muted);font-style:italic}
+.cmp-empty{margin-top:12px;padding:12px 14px;background:var(--amber-soft);border:1px solid var(--amber-border);border-radius:12px;font-size:14px;color:#6d4d10}
+.cmp-empty a{color:#92400e;font-weight:700;text-decoration:underline}
+.profile-summary{margin:0 0 12px;padding:11px 14px;background:var(--green-soft);border:1px solid rgba(22,163,74,.18);border-radius:12px;font-size:15px;font-weight:700;color:var(--green-deep)}
+.meta-block{margin-top:14px;padding-top:12px;border-top:1px dashed #e3e7ec;font-size:13px;color:var(--muted);line-height:1.5}
+.meta-block a{color:var(--green-dark);text-decoration:underline}
+.meta-fresh{display:inline-flex;align-items:center;gap:5px;font-weight:600}
+.meta-fresh.ok{color:var(--green-dark)}
+.meta-fresh.stale{color:#b45309}
+.meta-warn{margin-bottom:8px;padding:9px 11px;background:var(--amber-soft);border:1px solid var(--amber-border);border-radius:8px;color:#92400e;font-size:13px;font-weight:600;line-height:1.4}
+@media (max-width:900px){.grid-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:640px){.card{padding:16px 14px}.grid-2,.grid-3{grid-template-columns:1fr}.btn-row .btn{flex:1 1 100%;white-space:normal;text-align:center}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <section class="biz-card">
+    <h1>🌾 Субсидии и гранты</h1>
+    <p>Меры поддержки АПК простыми словами. Оценка соответствия считает обязательные требования отдельно: если хозяйство не проходит по ним — мера помечается «Не подходит». Интересные меры отмечайте закладкой 🔖 — она синхронизируется между устройствами через аккаунт.</p>
+  </section>
+
+  <div class="kfh-scrnav" id="scrnav"></div>
+
+  <!-- ================= МЕРЫ ================= -->
+  <section class="kfh-scr" data-scr="measures" data-title="Меры">
+    <div class="card">
+      <h2 class="card-title">Меры поддержки</h2>
+      <div class="profile-summary" id="profile-summary" hidden></div>
+      <div class="cmp-empty" id="profile-hint" hidden></div>
+      <p class="hint" style="margin:0 0 4px">Выберите категорию — лента прокручивается влево-вправо.</p>
+      <div class="chip-row" id="chips">
+        <button class="chip active" data-situ="all">Все</button>
+        <button class="chip" data-situ="bookmarked">⭐ В закладках</button>
+        <button class="chip" data-situ="grants">Гранты</button>
+        <button class="chip" data-situ="subs">Субсидии</button>
+        <button class="chip" data-situ="credit">Кредиты, лизинг</button>
+        <button class="chip" data-situ="tax">Налоги и занятость</button>
+        <button class="chip" data-situ="coop">Кооперация и экспорт</button>
+        <button class="chip" data-situ="rural">Сельские территории</button>
+      </div>
+      <div id="cards" style="margin-top:4px"></div>
+      <p class="hint" id="subCount"></p>
+
+      <!-- ═══ РЕГЛАМЕНТ АКТУАЛИЗАЦИИ (служебный, пользователям не показывается) ═══
+           • Периодичность сверки: раз в 6 месяцев и перед сезоном подачи (март, сентябрь).
+           • Проверять: сроки приёма, размеры/ставки, условия, списки документов, ОБЯЗАТЕЛЬНЫЕ требования (hard-правила).
+           • После сверки обновлять `upd` и при изменении условий — правила в CARDS.
+      ═══════════════════════════════════════════════════════════════════════════ -->
+    </div>
+  </section>
+
+  <!-- ================= БИЗНЕС-ПЛАН ================= -->
+  <section class="kfh-scr" data-scr="bp" data-title="Бизнес-план">
+    <div class="card">
+      <h2 class="card-title">Конструктор бизнес-плана</h2>
+      <p class="hint" style="margin:0 0 6px">Собирает план по разделам, которые требуют конкурсные комиссии грантов.</p>
+      <div class="grid-2">
+        <div><label class="label">Название проекта</label><input class="input" id="bp-name" placeholder="Например: Развитие молочной фермы на 50 голов"></div>
+        <div><label class="label">Направление</label>
+          <select class="select" id="bp-dir"><option>Растениеводство</option><option>Животноводство</option><option>Смешанное</option><option>Переработка</option></select></div>
+      </div>
+      <div class="grid-3">
+        <div><label class="label">Площадь, га</label><input class="input" type="number" id="bp-area" min="0" placeholder="100"></div>
+        <div><label class="label">Поголовье</label><input class="input" type="number" id="bp-head" min="0" placeholder="50"></div>
+        <div><label class="label">Новых рабочих мест</label><input class="input" type="number" id="bp-jobs" min="0" value="2"></div>
+      </div>
+      <details class="kfh-det" id="detInv">
+        <summary>Инвестиции, руб.</summary>
+        <div class="kfh-det-body">
+          <div class="grid-2">
+            <div><label class="label">Техника и оборудование</label><input class="input" type="number" id="bp-eq" min="0" placeholder="3500000"></div>
+            <div><label class="label">Строительство / ремонт</label><input class="input" type="number" id="bp-build" min="0" placeholder="0"></div>
+            <div><label class="label">Скот / посадочный материал</label><input class="input" type="number" id="bp-stock" min="0" placeholder="0"></div>
+            <div><label class="label">Прочие инвестиции</label><input class="input" type="number" id="bp-other" min="0" placeholder="0"></div>
+          </div>
+        </div>
+      </details>
+      <details class="kfh-det" id="detFund">
+        <summary>Финансирование и срок</summary>
+        <div class="kfh-det-body">
+          <div class="grid-3">
+            <div><label class="label">Запрашиваемый грант, руб.</label><input class="input" type="number" id="bp-grant" min="0" placeholder="4050000"></div>
+            <div><label class="label">Собственные средства, руб.</label><input class="input" type="number" id="bp-own" min="0" placeholder="450000"></div>
+            <div><label class="label">Срок проекта, мес.</label><input class="input" type="number" id="bp-term" min="1" value="24"></div>
+          </div>
+        </div>
+      </details>
+      <details class="kfh-det" id="detFin">
+        <summary>Финансы года (можно подтянуть из «Экономики поля»)</summary>
+        <div class="kfh-det-body">
+          <div class="grid-2">
+            <div><label class="label">Выручка в год, руб.</label><input class="input" type="number" id="bp-rev" min="0" placeholder="6300000"></div>
+            <div><label class="label">Затраты в год, руб.</label><input class="input" type="number" id="bp-costs" min="0" placeholder="3950000"></div>
+          </div>
+        </div>
+      </details>
+      <div class="btn-row">
+        <button class="btn btn-secondary btn-wrap" id="bp-pull">Подтянуть финансы</button>
+        <button class="btn btn-primary" id="bp-gen">Сформировать бизнес-план</button>
+      </div>
+      <div class="preview" id="bp-out" hidden></div>
+      <div class="btn-row" id="bp-actions" hidden>
+        <button class="btn btn-secondary" id="bp-copy">Копировать</button>
+        <button class="btn btn-secondary" id="bp-print">Печать / PDF</button>
+        <button class="btn btn-secondary" id="bp-word">Скачать Word</button>
+      </div>
+      <h3 style="margin-top:20px;font-size:17px;font-weight:800">Чек-лист готовности заявки</h3>
+      <ul class="lst">
+        <li>Собственный вклад подтверждён и составляет не менее 10% стоимости проекта.</li>
+        <li>Есть земля/помещение под проект (собственность или долгосрочная аренда).</li>
+        <li>Коммерческие предложения с реалистичными ценами на технику и работы.</li>
+        <li>Продуманы каналы сбыта (элеватор, переработчик, кооператив, розница).</li>
+        <li>Планируются рабочие места и объёмы производства на 5 лет.</li>
+        <li>Нет долгов по налогам и взносам (справка ФНС).</li>
+        <li>Целевое использование гранта совпадает с разрешёнными направлениями.</li>
+      </ul>
+      <div class="ok-box">👀 Комиссия смотрит: реалистичность цен и урожайности, собственный вклад, рабочие места, сбыт, корректность КП, отсутствие долгов. Слабый бизнес-план — самая частая причина отказа.</div>
+    </div>
+  </section>
+
+  <!-- ================= КАЛЕНДАРЬ И ПАКЕТ ================= -->
+  <section class="kfh-scr" data-scr="cal" data-title="Календарь и пакет">
+    <div class="card">
+      <h2 class="card-title">Ориентировочный календарь подачи</h2>
+      <p class="hint" style="margin:0 0 10px">Окна меняются ежегодно — сверяйте с источниками в карточках мер.</p>
+      <ul class="lst">
+        <li><b>Погектарная субсидия</b> — весна (март–май), к началу посевной.</li>
+        <li><b>Субсидия на молоко</b> — ежеквартально, по итогам периода.</li>
+        <li><b>Агростартап</b> — обычно весна, возможна осенняя волна конкурса.</li>
+        <li><b>Семейная ферма / кооперативы</b> — 1–2 конкурса в год.</li>
+        <li><b>Страхование с господдержкой</b> — при заключении договора (весна/осень).</li>
+        <li><b>КРСТ (жильё, инфраструктура)</b> — по порядку муниципалитетов.</li>
+        <li><b>Кредиты, гарантии, лизинг, субсидия найма, налоги</b> — круглогодично.</li>
+      </ul>
+      <h3 style="margin-top:18px;font-size:17px;font-weight:800">Базовый набор заявителя</h3>
+      <ul class="lst">
+        <li>Выписка ЕГРИП/ЕГРЮЛ; устав (для юрлиц/кооператива).</li>
+        <li>Справка ФНС об отсутствии задолженности.</li>
+        <li>Документы на землю/животных/технику.</li>
+        <li>Бизнес-план (вкладка «Бизнес-план»).</li>
+        <li>Коммерческие предложения на покупки.</li>
+        <li>Реквизиты счёта; согласие на обработку персональных данных.</li>
+        <li>Отчётность по формам АПК — для субсидий.</li>
+      </ul>
+      <div class="warn-box">️ Ведите реестр поданных заявок и полученных документов в «Архиве хозяйства» — это спасает, когда министерство или банк запрашивает историю за прошлые годы.</div>
+      <div class="btn-row">
+        <a class="btn btn-primary btn-wrap" href="request.html">Получить консультацию по мерам</a>
+        <a class="btn btn-secondary btn-wrap" href="calendar.html">Открыть календарь фермера</a>
+        <a class="btn btn-secondary btn-wrap" href="archive.html">Открыть архив хозяйства</a>
+        <a class="btn btn-secondary btn-wrap" href="economy.html">Справка из экономики поля</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p>© <span id="year"></span> <a href="index.html">КФХ-Помощник</a> · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p>Информация о мерах поддержки носит справочный характер и не гарантирует получение субсидии или гранта. Актуальные условия проверяйте по ссылкам-источникам в карточках мер.</p>
+  </div>
+</div>
+
+<script>
+window.KFH_SCREEN_OPTS={mobile:"measures",desktop:"measures"};
+
+var SESSION_KEY="kfh_helper_demo_session_v1";
+var PROFILE_KEY="kfh_helper_demo_profile_v1";
+var CARD_COUNT_KEY="kfh_sub_cards_v1";
+var BP_COUNT_KEY="kfh_bp_v1";
+var FIELDS_KEY="kfh_agro_fields_v1";
+var BMK_KEY="kfh_sub_bookmarks_v1";
+
+function $(id){return document.getElementById(id);}
+function num(id){var v=parseFloat($(id).value);return isNaN(v)?0:v;}
+function fmt(n){return Math.round(n).toLocaleString("ru-RU");}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+$("year").textContent=new Date().getFullYear();
+
+function fmtDateShort(iso){if(!iso)return "—";var p=iso.split("-");if(p.length!==3)return iso;return p[2]+"."+p[1]+"."+p[0];}
+function isFresh(iso){var d=new Date(iso);if(isNaN(d))return true;var months=(new Date()-d)/(1000*60*60*24*30.44);return months<=6;}
+
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+function sb(){return window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);}
+
+var SB_OK=supabaseReady();
+var currentUserId=null;
+var currentBookmarks=[]; /* синхронный кэш закладок: либо из аккаунта, либо из localStorage */
+
+/* =========================================================
+   ЗАКЛАДКИ: синхронизация через аккаунт (Supabase) или
+   локально (localStorage) в демо-режиме
+   ========================================================= */
+function bmkLocalGet(){try{var a=JSON.parse(localStorage.getItem(BMK_KEY));return Array.isArray(a)?a:[];}catch(e){return[];}}
+function bmkLocalSet(arr){localStorage.setItem(BMK_KEY,JSON.stringify(arr));}
+
+async function loadBookmarks(){
+  if(SB_OK&&currentUserId){
+    try{
+      var r=await sb().from("profiles").select("bookmarks").eq("id",currentUserId).maybeSingle();
+      if(r.data&&Array.isArray(r.data.bookmarks)){currentBookmarks=r.data.bookmarks.slice();return;}
+    }catch(e){console.warn("[KFH] Не удалось загрузить закладки из аккаунта:",e.message);}
+  }
+  currentBookmarks=bmkLocalGet();
+}
+
+async function saveBookmarks(){
+  if(SB_OK&&currentUserId){
+    try{
+      await sb().from("profiles").upsert({id:currentUserId,bookmarks:currentBookmarks});
+    }catch(e){console.warn("[KFH] Не удалось сохранить закладки в аккаунт:",e.message);}
+  }else{
+    bmkLocalSet(currentBookmarks);
+  }
+}
+
+function isBmk(t){return currentBookmarks.indexOf(t)>=0;}
+function updateBmkBtn(btn){
+  var on=isBmk(btn.dataset.bmk);
+  btn.textContent=on?" В закладках · снять":"🔖 В закладки";
+  btn.classList.toggle("bmk-on",on);
+  btn.title=on?"Убрать меру из закладок":"Сохранить меру в закладки";
+}
+function updateAllBmkBtns(){document.querySelectorAll(".bmk-btn").forEach(updateBmkBtn);}
+
+/* =========================================================
+   АВТОКОМПЛАЕНС v2: обязательные (hard) требования,
+   три состояния: выполнено / не выполнено / нет данных
+   ========================================================= */
+var complianceProfile=null;
+
+function enrichProfile(p){
+  if(!p)return p;
+  if(p.reg_date){
+    var d=new Date(p.reg_date);
+    if(!isNaN(d)){
+      var now=new Date();
+      var months=(now.getFullYear()-d.getFullYear())*12+(now.getMonth()-d.getMonth());
+      if(now.getDate()<d.getDate())months--;
+      p.reg_age_months=Math.max(0,months);
+    }
+  }
+  return p;
+}
+
+async function loadComplianceProfile(){
+  if(window.KFHProfile){
+    var p=await KFHProfile.get();
+    if(p){complianceProfile=enrichProfile(p);return;}
+  }
+  try{
+    var d=JSON.parse(localStorage.getItem(PROFILE_KEY));
+    if(d)complianceProfile=enrichProfile(d);
+  }catch(e){}
+}
+
+function evalRule(r,p){
+  var v=p?p[r.field]:undefined;
+  if(v===undefined||v===null||String(v).trim()==="")return "unknown";
+  var ok=false;
+  switch(r.op){
+    case "=":ok=(v===r.value);break;
+    case "!=":ok=(v!==r.value);break;
+    case ">":ok=(Number(v)>Number(r.value));break;
+    case "<":ok=(Number(v)<Number(r.value));break;
+    case ">=":ok=(Number(v)>=Number(r.value));break;
+    case "<=":ok=(Number(v)<=Number(r.value));break;
+    case "in":ok=Array.isArray(r.value)&&r.value.indexOf(v)>=0;break;
+    case "exists":ok=true;break;
+  }
+  return ok?"pass":"fail";
+}
+
+function calcCompliance(m,p){
+  if(!m.rules||!m.rules.length)return null;
+  var auto=m.rules.filter(function(r){return r.auto!==false;});
+  if(!auto.length)return null;
+  var passed=[],failed=[],unknown=[],manual=[];
+  var hardFails=[],hardUnknown=[];
+  auto.forEach(function(r){
+    var st=evalRule(r,p);
+    if(st==="pass")passed.push(r.label);
+    else if(st==="fail"){failed.push(r.label);if(r.hard)hardFails.push(r.label);}
+    else{unknown.push(r.label);if(r.hard)hardUnknown.push(r.label);}
+  });
+  m.rules.forEach(function(r){if(r.auto===false)manual.push(r.label);});
+  var eligible=(hardFails.length===0);
+  var percent=eligible?Math.round(passed.length/auto.length*100):0;
+  return{percent:percent,eligible:eligible,passed:passed,failed:failed,unknown:unknown,manual:manual,hardFails:hardFails,hardUnknown:hardUnknown};
+}
+
+function renderComplianceBlock(c){
+  if(!c)return "";
+  var html='<div class="cmp-block">';
+  if(!c.eligible){
+    html+='<div class="cmp-head"><span class="cmp-label">Обязательные требования не выполнены</span><span class="cmp-percent cmp-red">Не подходит</span></div>';
+    html+='<ul class="cmp-list">';
+    c.hardFails.forEach(function(l){html+='<li class="cmp-fail">✗ '+esc(l)+' — обязательное требование</li>';});
+    html+='</ul>';
+    if(c.hardUnknown.length){
+      html+='<ul class="cmp-list" style="margin-top:8px">';
+      c.hardUnknown.forEach(function(l){html+='<li class="cmp-manual">• Уточните в анкете: '+esc(l)+'</li>';});
+      html+='</ul>';
+    }
+    html+='<p class="hint" style="margin:10px 0 0">Мера недоступна, пока не выполнены обязательные требования. Посмотрите другие меры — часть из них может подойти.</p>';
+    html+='</div>';
+    return html;
+  }
+  var cls=c.percent>=70?"green":(c.percent>=40?"yellow":"red");
+  var head=c.hardUnknown.length?"Предварительно подходите":"Соответствие требованиям";
+  html+='<div class="cmp-head"><span class="cmp-label">'+head+'</span><span class="cmp-percent cmp-'+cls+'">'+c.percent+'%</span></div>';
+  html+='<div class="cmp-bar"><div class="cmp-fill '+cls+'" style="width:'+c.percent+'%"></div></div>';
+  html+='<ul class="cmp-list">';
+  if(c.hardUnknown.length){
+    c.hardUnknown.forEach(function(l){html+='<li class="cmp-manual">• Уточните в анкете (обязательное): '+esc(l)+'</li>';});
+  }
+  c.passed.forEach(function(l){html+='<li class="cmp-ok">✓ '+esc(l)+'</li>';});
+  c.failed.forEach(function(l){html+='<li class="cmp-fail">✗ '+esc(l)+'</li>';});
+  c.unknown.forEach(function(l){
+    if(c.hardUnknown.indexOf(l)<0)html+='<li class="cmp-manual">• Нет данных: '+esc(l)+'</li>';});
+  c.manual.forEach(function(l){html+='<li class="cmp-manual">• Проверьте вручную: '+esc(l)+'</li>';});
+  html+='</ul></div>';
+  return html;
+}
+
+function renderMetaBlock(c){
+  if(!c.upd)return "";
+  var fresh=isFresh(c.upd);
+  var warn=fresh?"":'<div class="meta-warn">⚠️ Данные проверены более 6 месяцев назад — сверьте сроки и условия с источником перед подачей.</div>';
+  var link=(c.src&&c.src!=="#")?' · <a href="'+c.src+'" target="_blank" rel="noopener">'+esc(c.src_name||"Источник")+'</a>':(c.src_name?' · '+esc(c.src_name):"");
+  return '<div class="meta-block">'+warn+
+    '<span class="meta-fresh '+(fresh?"ok":"stale")+'">'+(fresh?"✅":"🕓")+' Проверено: '+fmtDateShort(c.upd)+'</span>'+link+
+    '</div>';
+}
+
+var CARDS=[
+{t:"Грант «Агростартап»",tag:"до 5 млн руб. (до 7 млн при взносе в кооператив)",situ:"grants",
+upd:"2026-09-20",src:"https://mcx.gov.ru/",src_name:"Минсельхоз России",
+who:"КФХ или ИП, зарегистрированные не более 12 месяцев до заявки.",
+use:"Земля, техника, скот, строительство и ремонт, посадочный материал.",
+docs:["Заявка и бизнес-план","Выписка ЕГРИП/ЕГРЮЛ","Справка ФНС об отсутствии долгов","Коммерческие предложения","Документы на землю (при наличии)","Подтверждение собственных средств (не менее 10%)"],
+mist:["Завышенные цены в коммерческих предложениях","Нереалистичный бизнес-план","Не подтверждён собственный вклад"],
+check:"Минсельхоз России / Минсельхозпрод РТ",
+rules:[
+ {field:"farm_type",op:"in",value:["КФХ","ИП"],label:"Форма хозяйства: КФХ или ИП (ООО/ЛПХ не допускаются)",hard:true},
+ {field:"reg_age_months",op:"<=",value:12,label:"Срок регистрации ≤ 12 месяцев",hard:true},
+ {field:"prev_agrostartup",op:"=",value:true,label:"Ранее не получал «Агростартап»",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true},
+ {field:"own_funds_pct",op:">=",value:10,label:"Собственные средства ≥ 10% проекта",hard:true},
+ {field:"rural_residence",op:"=",value:true,label:"Хозяйство в сельской местности",hard:true},
+ {field:"inn",op:"exists",label:"Указан ИНН"},
+ {field:"commit_5y",op:"=",value:true,label:"Готовность к обязательству 5 лет"},
+ {field:"manual_bp",op:"=",value:true,label:"Бизнес-план и коммерческие предложения готовы",auto:false}
+]},
+{t:"Грант «Семейная ферма»",tag:"до 30 млн руб. (не более 60% проекта)",situ:"grants",
+upd:"2026-09-20",src:"https://mcx.gov.ru/",src_name:"Минсельхоз России",
+who:"Действующие КФХ более 12 месяцев.",
+use:"Строительство и модернизация ферм, закупка поголовья, техники, переработка.",
+docs:["Бизнес-план","Документы на землю под строительство","Финансовые показатели","Обязательство создать 3+ рабочих места"],
+mist:["Нет земли под проект в собственности/аренде","Несоответствие ОКВЭД проекту"],
+check:"Минсельхоз России / Минсельхозпрод РТ",
+rules:[
+ {field:"farm_type",op:"=",value:"КФХ",label:"Форма хозяйства: КФХ",hard:true},
+ {field:"reg_age_months",op:">",value:12,label:"Срок регистрации > 12 месяцев",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true},
+ {field:"own_funds_pct",op:">=",value:10,label:"Собственные средства ≥ 10% проекта",hard:true},
+ {field:"land_for_project",op:"=",value:true,label:"Есть земля под проект",hard:true},
+ {field:"family_members",op:">=",value:2,label:"Участвуют ≥ 2 членов семьи",hard:true},
+ {field:"activity_type",op:"in",value:["Животноводство","Смешанное"],label:"Направление: животноводство или смешанное"},
+ {field:"workers_count",op:">=",value:3,label:"Работников ≥ 3 (создание рабочих мест)"},
+ {field:"manual_bp",op:"=",value:true,label:"Бизнес-план и софинансирование подтверждены",auto:false}
+]},
+{t:"Грант кооперативам (материально-техническая база)",tag:"условия уточнить на текущий год",situ:"grants coop",
+upd:"2026-09-20",src:"https://mcx.gov.ru/",src_name:"Минсельхоз России",
+who:"Сельскохозяйственные потребительские кооперативы (СПоК).",
+use:"Оборудование для заготовки, хранения, переработки и сбыта.",
+docs:["Устав и список членов кооператива","Бизнес-план","Коммерческие предложения","Обоснование загрузки мощностей"],
+mist:["Слабое обоснование загрузки и экономики проекта"],
+check:"Минсельхоз России / Минсельхозпрод РТ",
+rules:[
+ {field:"farm_type",op:"=",value:"СПК",label:"Форма: СПК (сельхозкооператив)",hard:true},
+ {field:"members_count",op:">=",value:5,label:"Членов кооператива ≥ 5",hard:true},
+ {field:"reg_age_months",op:">=",value:12,label:"Кооперативу ≥ 12 месяцев",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true},
+ {field:"manual_plan",op:"=",value:true,label:"План загрузки и бизнес-план готовы",auto:false}
+]},
+{t:"Погектарная (компенсирующая) субсидия",tag:"ставки за 1 га, дифференцированы по культурам",situ:"subs",
+upd:"2026-09-20",src:"https://agro.tatarstan.ru/",src_name:"Минсельхозпрод РТ",
+who:"Сельхозтоваропроизводители с правами на землю.",
+use:"Частичное возмещение затрат на агротехнологические работы.",
+docs:["Справка-расчёт","Отчёт АПК-2","Документы на землю"],
+mist:["Расхождение площадей со спутниковым мониторингом","Пропуск весенних сроков подачи"],
+check:"Минсельхозпрод РТ",
+rules:[
+ {field:"activity_type",op:"in",value:["Растениеводство","Смешанное"],label:"Направление: растениеводство или смешанное",hard:true},
+ {field:"land_area_ha",op:">",value:0,label:"Площадь земли > 0 га",hard:true},
+ {field:"land_title",op:"in",value:["Собственность","Аренда","Собственность и аренда"],label:"Права на землю оформлены",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true},
+ {field:"apk_reports",op:"=",value:true,label:"Сдаётся отчётность по формам АПК",hard:true},
+ {field:"district",op:"exists",label:"Указан район"}
+]},
+{t:"Субсидия на товарное молоко и племенное дело",tag:"за 1 кг реализованного молока; отдельно племенной молодняк",situ:"subs",
+upd:"2026-09-20",src:"https://agro.tatarstan.ru/",src_name:"Минсельхозпрод РТ",
+who:"Молочные фермы и племенные хозяйства.",
+use:"Стимулирование продуктивности, поддержка племенного поголовья.",
+docs:["Идентификация животных в ВетИС","Ветеринарное благополучие","Объёмы реализации через эВСД"],
+mist:["Реализация без эВСД","Нарушение ветеринарной отчётности"],
+check:"Минсельхозпрод РТ",
+rules:[
+ {field:"activity_type",op:"in",value:["Животноводство","Смешанное"],label:"Направление: животноводство или смешанное",hard:true},
+ {field:"cattle_dairy",op:"=",value:true,label:"Есть молочное стадо КРС",hard:true},
+ {field:"vetis_done",op:"=",value:true,label:"Скот идентифицирован в ВетИС",hard:true},
+ {field:"evsd_done",op:"=",value:true,label:"Реализация через эВСД («Меркурий»)",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true}
+]},
+{t:"Компенсация части затрат (КАПЕКС) / лизинга",tag:"возврат части стоимости техники РФ",situ:"subs credit",
+upd:"2026-09-20",src:"https://agro.tatarstan.ru/",src_name:"Минсельхозпрод РТ",
+who:"Хозяйства, купившие новую технику или взявшие её в лизинг.",
+use:"Снижение стоимости техперевооружения.",
+docs:["Договоры и счета","ПСМ/ЭПСМ","Платёжные документы"],
+mist:["Покупка до подтверждения участия в программе","Техника вне перечня"],
+check:"Минсельхозпрод РТ",
+rules:[
+ {field:"has_machinery",op:"=",value:true,label:"Техника куплена/планируется к покупке",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true},
+ {field:"farm_type",op:"exists",label:"Указана форма хозяйства"},
+ {field:"manual_docs",op:"=",value:true,label:"Техника из перечня, документы по сделке есть",auto:false}
+]},
+{t:"Агрострахование с господдержкой",tag:"до 50% страховой премии",situ:"subs",
+upd:"2026-09-20",src:"https://mcx.gov.ru/",src_name:"Минсельхоз России / НСА",
+who:"Растениеводы и животноводы, заключившие договор по утверждённым правилам.",
+use:"Защита от засухи, заморозков, града, падежа.",
+docs:["Договор страхования","Документы по объекту страхования","Фиксация страхового случая в сроки"],
+mist:["Поздняя фиксация страхового случая"],
+check:"Минсельхоз России / Национальный союз страховщиков",
+rules:[
+ {field:"activity_type",op:"in",value:["Растениеводство","Животноводство","Смешанное"],label:"Есть страхуемое направление (культуры/скот)",hard:true},
+ {field:"manual_ins",op:"=",value:true,label:"Договор по утверждённым правилам страхования",auto:false}
+]},
+{t:"Льготное кредитование АПК",tag:"до ~5% годовых",situ:"credit",
+upd:"2026-09-20",src:"https://mcx.gov.ru/",src_name:"Минсельхоз России",
+who:"Хозяйства без долгов по налогам и с приемлемой кредитной историей.",
+use:"Оборотные средства (семена, ГСМ, корма) и инвестиционные цели.",
+docs:["Заявка в уполномоченный банк","Финансовые показатели","План расходов"],
+mist:["Долг по налогам более 3 000 руб. на дату заявки","Плохая кредитная история руководителя"],
+check:"Уполномоченные банки / Минсельхоз России",
+rules:[
+ {field:"okved_agro",op:"=",value:true,label:"ОКВЭД: сельхозтоваропроизводитель",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам (≤ 3 тыс. руб.)",hard:true},
+ {field:"farm_type",op:"in",value:["КФХ","ИП","ООО","СПК"],label:"Форма: КФХ, ИП, ООО или СПК",hard:true},
+ {field:"inn",op:"exists",label:"Указан ИНН"},
+ {field:"manual_fin",op:"=",value:true,label:"Платёжеспособность и кредитная история приемлемы",auto:false}
+]},
+{t:"Льготные кредиты МСП (программа 1764)",tag:"ставки ниже рынка",situ:"credit",
+upd:"2026-09-20",src:"https://моибизнес.рф/",src_name:"Мой бизнес / Минэкономразвития",
+who:"Субъекты МСП, включая КФХ и ИП.",
+use:"Оборот и инвестиции на условиях программы Минэкономразвития.",
+docs:["Заявка в банк-участник","Документы по деятельности и целевому назначению"],
+mist:["Подача без понимания целевого назначения кредита"],
+check:"«Мой бизнес» РТ / банки-участники",
+rules:[
+ {field:"sme_registry",op:"=",value:true,label:"Хозяйство в реестре МСП",hard:true},
+ {field:"farm_type",op:"in",value:["КФХ","ИП","ООО"],label:"Форма: КФХ, ИП или ООО",hard:true},
+ {field:"activity_type",op:"exists",label:"Указано направление деятельности"},
+ {field:"manual_goal",op:"=",value:true,label:"Цель кредита соответствует программе",auto:false}
+]},
+{t:"Гарантийная поддержка",tag:"поручительство до ~50% суммы кредита",situ:"credit",
+upd:"2026-09-20",src:"https://моибизнес.рф/",src_name:"Гарантийный фонд РТ / Мой бизнес",
+who:"Хозяйства, которым не хватает залога для кредита.",
+use:"Помогает получить кредит или лизинг.",
+docs:["Заявка в Гарантийный фонд РТ","Документы по кредиту и проекту"],
+mist:["Не учтена комиссия фонда в финансовой модели"],
+check:"Гарантийный фонд РТ",
+rules:[
+ {field:"farm_type",op:"exists",label:"Указана форма хозяйства",hard:true},
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true},
+ {field:"collateral_lack",op:"=",value:true,label:"Не хватает залога (цель обращения)"},
+ {field:"manual_solvent",op:"=",value:true,label:"Платёжеспособность подтверждена",auto:false}
+]},
+{t:"Льготный лизинг сельхозтехники",tag:"аванс от 0%, удорожание ниже рынка",situ:"credit",
+upd:"2026-09-20",src:"https://rosagroleasing.ru/",src_name:"Росагролизинг",
+who:"Хозяйства, обновляющие парк техники.",
+use:"Тракторы, комбайны, прицепное оборудование.",
+docs:["Заявка в лизинговую компанию","ПСМ, договор поставки"],
+mist:["Сравнивают только платёж, а не полную стоимость сделки"],
+check:"Росагролизинг / региональные лизинговые программы",
+rules:[
+ {field:"farm_type",op:"in",value:["КФХ","ИП","ООО","СПК"],label:"Форма: КФХ, ИП, ООО или СПК",hard:true},
+ {field:"has_machinery",op:"=",value:true,label:"Обновление парка техники (цель)"},
+ {field:"manual_solvent",op:"=",value:true,label:"Платёжеспособность для лизинга подтверждена",auto:false}
+]},
+{t:"Субсидии на трудоустройство",tag:"возмещение части затрат на зарплату",situ:"tax",
+upd:"2026-09-20",src:"https://trudvsem.ru/",src_name:"Работа России / СФР",
+who:"Работодатели, нанимающие безработных (в т.ч. на сезонные работы).",
+use:"Компенсация части затрат при найме через центр занятости.",
+docs:["Заявка в ЦЗН до найма","Трудовой договор","Отчётность по срокам"],
+mist:["Найм до подачи заявки — право на субсидию теряется"],
+check:"Центр занятости населения РТ / СФР",
+rules:[
+ {field:"no_tax_debt",op:"=",value:true,label:"Нет долгов по налогам и взносам",hard:true},
+ {field:"has_seasonal_workers",op:"=",value:true,label:"Планируется найм работников (цель)"},
+ {field:"manual_czn",op:"=",value:true,label:"Заявка в ЦЗН подана до найма",auto:false}
+]},
+{t:"Налоговые преференции: ЕСХН и налоговые каникулы",tag:"ЕСХН 6% с разницы; каникулы для впервые зарегистрированных ИП (закон РТ)",situ:"tax",
+upd:"2026-09-20",src:"https://www.nalog.gov.ru/",src_name:"ФНС России",
+who:"Сельхозтоваропроизводители; впервые зарегистрированные ИП по видам деятельности РТ.",
+use:"Снижение налоговой нагрузки на старте и в текущей деятельности.",
+docs:["Уведомление о применении ЕСХН","Контроль доли с/х выручки не менее 70%"],
+mist:["Потеря права на ЕСХН из-за доли выручки"],
+check:"УФНС по РТ / Минфин РТ",
+rules:[
+ {field:"okved_agro",op:"=",value:true,label:"ОКВЭД: сельскохозяйственная деятельность",hard:true},
+ {field:"agro_revenue_share",op:">=",value:70,label:"Доля с/х выручки ≥ 70%",hard:true},
+ {field:"activity_type",op:"in",value:["Растениеводство","Животноводство","Смешанное","Переработка"],label:"Заявлено с/х направление"}
+]},
+{t:"Поддержка экспортёров АПК",tag:"субсидии на сертификацию, транспортировку, выставки",situ:"coop",
+upd:"2026-09-20",src:"https://www.exportcenter.ru/",src_name:"Российский экспортный центр",
+who:"Хозяйства и компании, продающие продукцию за пределы РФ.",
+use:"Снижение затрат на выход на внешние рынки.",
+docs:["Ветеринарные и фитосанитарные документы заранее","Договоры с покупателями"],
+mist:["Документы оформления готовятся после сделки, а не до"],
+check:"РЭЦ / экспортные программы Минсельхоза",
+rules:[
+ {field:"export_activity",op:"=",value:true,label:"Есть поставки за пределы РФ",hard:true},
+ {field:"farm_type",op:"exists",label:"Указана форма хозяйства"},
+ {field:"manual_vet",op:"=",value:true,label:"Вет/фито требования соблюдены",auto:false}
+]},
+{t:"КРСТ: жильё и инфраструктура на селе",tag:"компенсация до ~70% затрат на жильё",situ:"rural",
+upd:"2026-09-20",src:"https://mcx.gov.ru/",src_name:"Минсельхоз России (программа КРСТ)",
+who:"Жители сельских территорий, хозяйства, нанимающие специалистов.",
+use:"Улучшение жилищных условий сотрудников, инфраструктура.",
+docs:["Подтверждение проживания/работы на селе","Смета и документы по объекту","Обязательство отработки 5 лет"],
+mist:["Несоответствие территории или статуса заявителя"],
+check:"Минстрой РТ / Минсельхозпрод РТ",
+rules:[
+ {field:"rural_residence",op:"=",value:true,label:"Проживание/работа в сельской местности",hard:true},
+ {field:"district",op:"exists",label:"Указан район (муниципалитет)",hard:true},
+ {field:"commit_5y",op:"=",value:true,label:"Обязательство отработки 5 лет принято"},
+ {field:"manual_obj",op:"=",value:true,label:"Документы по жилью/объекту готовы",auto:false}
+]}
+];
+
+function renderCards(){
+  $("cards").innerHTML=CARDS.map(function(c,i){
+    var compliance=calcCompliance(c,complianceProfile);
+    var cmpHtml=compliance?renderComplianceBlock(compliance):"";
+    var metaHtml=renderMetaBlock(c);
+    return '<div class="acc" data-situ="'+c.situ+'" data-title="'+esc(c.t)+'"><button class="acc-head">'+esc(c.t)+'<span class="plus">+</span></button>'+
+    '<div class="acc-body"><span class="tagline">'+esc(c.tag)+'</span>'+
+    cmpHtml+
+    '<h4>Кто может претендовать</h4><p style="margin:0 0 8px">'+esc(c.who)+'</p>'+
+    '<h4>На что можно направить</h4><p style="margin:0 0 8px">'+esc(c.use)+'</p>'+
+    '<h4>Типовые документы</h4><ul>'+c.docs.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul>'+
+    '<h4>Частые ошибки</h4><ul>'+c.mist.map(function(d){return '<li>'+esc(d)+'</li>';}).join('')+'</ul>'+
+    '<h4>Где проверять</h4><p style="margin:0 0 10px">'+esc(c.check)+'</p>'+
+    '<div class="btn-row"><a class="btn btn-primary btn-wrap" style="min-height:42px" href="request.html">Получить консультацию</a>'+
+    '<button class="btn btn-secondary btn-wrap bmk-btn" style="min-height:42px" type="button" data-bmk="'+esc(c.t)+'">🔖 В закладки</button></div>'+
+    metaHtml+'</div></div>';
+  }).join("");
+  updateAllBmkBtns();
+
+  var ps=document.getElementById("profile-summary");
+  if(ps&&complianceProfile&&window.KFHProfile){
+    var summ=KFHProfile.summary(complianceProfile);
+    if(summ){ps.hidden=false;ps.textContent="🏡 Подбор для: "+summ;}
+  }
+
+  if(!complianceProfile){
+    $("profile-hint").hidden=false;
+    $("profile-hint").innerHTML='🏡 Анкета не заполнена — автокомплаенс не может рассчитать соответствие. <a href="profile.html">Заполните анкету</a> (включая детализацию), чтобы увидеть точную оценку по каждой мере.';
+  }else{
+    $("profile-hint").hidden=true;
+  }
+}
+
+/* ---------- клик по закладке: мгновенный UI + фоновая синхронизация ---------- */
+document.addEventListener("click",function(e){
+  var b=e.target.closest(".bmk-btn");
+  if(!b)return;
+  var t=b.dataset.bmk;
+  var i=currentBookmarks.indexOf(t);
+  if(i>=0)currentBookmarks.splice(i,1);else currentBookmarks.push(t);
+  updateBmkBtn(b);
+  applyFilter(curFilter);
+  saveBookmarks(); /* фон: аккаунт или localStorage */
+});
+
+/* ---------- фильтры, включая «В закладках» ---------- */
+var curFilter="all";
+function applyFilter(k){
+  curFilter=k;
+  document.querySelectorAll("#cards .acc").forEach(function(el){
+    var list=(el.dataset.situ||"").split(" ");
+    var show;
+    if(k==="all")show=true;
+    else if(k==="bookmarked")show=isBmk(el.dataset.title||"");
+    else show=list.indexOf(k)>=0;
+    el.style.display=show?"":"none";
+  });
+}
+document.querySelectorAll(".chip").forEach(function(ch){
+  ch.addEventListener("click",function(){
+    document.querySelectorAll(".chip").forEach(function(x){x.classList.remove("active");});
+    ch.classList.add("active");
+    applyFilter(ch.dataset.situ);
+  });
+});
+
+/* ---------- аккордеон + метрика ---------- */
+document.addEventListener("click",function(e){
+  var h=e.target.closest(".acc-head");if(!h)return;
+  var b=h.parentElement.querySelector(".acc-body");
+  var p=h.querySelector(".plus");
+  var open=b.style.display==="block";
+  b.style.display=open?"none":"block";
+  p.textContent=open?"+":"−";
+  if(!open){var n=parseInt(localStorage.getItem(CARD_COUNT_KEY)||"0",10)+1;localStorage.setItem(CARD_COUNT_KEY,String(n));
+    $("subCount").textContent="Открытий карт в этом браузере: "+n+" (метрика для пилота и грантовой заявки).";}
+});
+
+/* ---------- бизнес-план ---------- */
+function getFields(){try{return JSON.parse(localStorage.getItem(FIELDS_KEY))||[];}catch(e){return[];}}
+$("bp-pull").addEventListener("click",function(){
+  var f=getFields();
+  if(!f.length){alert("Сначала сохраните расчёт в «Экономике поля» (кнопка «Сохранить в мои поля»).");return;}
+  var x=f[f.length-1];
+  $("bp-rev").value=Math.round(x.revenue||0);
+  $("bp-costs").value=Math.round(x.total||0);
+  if(x.area)$("bp-area").value=x.area;
+  $("detFin").open=true;
+  alert("Подтянуты данные последнего расчёта: выручка "+fmt(x.revenue)+" руб., затраты "+fmt(x.total)+" руб.");
+});
+
+$("bp-gen").addEventListener("click",function(){
+  var inv=num("bp-eq")+num("bp-build")+num("bp-stock")+num("bp-other");
+  var own=num("bp-own"),grant=num("bp-grant");
+  var rev=num("bp-rev"),costs=num("bp-costs");
+  var profit=rev-costs;
+  var margin=rev>0?profit/rev*100:null;
+  var ownPct=inv>0?own/inv*100:null;
+  var payback=profit>0?inv/profit:null;
+  if(inv<=0){alert("Заполните инвестиции (в блоке «Инвестиции, руб.»).");$("detInv").open=true;return;}
+  var t="БИЗНЕС-ПЛАН (предварительный, для заявки на грант)\nПроект: "+($("bp-name").value||"Не указан")+"\nНаправление: "+$("bp-dir").value+" · Регион: Республика Татарстан\nДата: "+new Date().toLocaleDateString("ru-RU")+"\n\n"+
+"1. РЕЗЮМЕ ПРОЕКТА\nЗапрашиваемый грант: "+fmt(grant)+" руб. Собственные средства: "+fmt(own)+" руб. Итого инвестиций: "+fmt(inv)+" руб.\nНовых рабочих мест: "+num("bp-jobs")+". Срок реализации: "+num("bp-term")+" мес.\n\n"+
+"2. ОПИСАНИЕ ХОЗЯЙСТВА\nПлощадь: "+(num("bp-area")||"—")+" га; поголовье: "+(num("bp-head")||"—")+".\n\n"+
+"3. ЦЕЛИ И ЗАДАЧИ\nУвеличение производства, обновление техники/поголовья, повышение продуктивности.\n\n"+
+"4. ПРОИЗВОДСТВЕННЫЙ ПЛАН\nИнвестиции: техника "+fmt(num("bp-eq"))+" руб.; строительство "+fmt(num("bp-build"))+" руб.; скот/посадочный материал "+fmt(num("bp-stock"))+" руб.; прочее "+fmt(num("bp-other"))+" руб.\n\n"+
+"5. МАРКЕТИНГОВЫЙ ПЛАН\nКаналы сбыта: элеваторы, переработчики, кооператив, розница.\n\n"+
+"6. ОРГАНИЗАЦИОННЫЙ ПЛАН\nНовых рабочих мест: "+num("bp-jobs")+". Срок реализации: "+num("bp-term")+" мес.\n\n"+
+"7. ФИНАНСОВЫЙ ПЛАН\nВыручка: "+fmt(rev)+" руб. Затраты: "+fmt(costs)+" руб. Прибыль: "+fmt(profit)+" руб. Рентабельность: "+(margin===null?"—":Math.round(margin*10)/10+"%")+".\nДоля собственных средств: "+(ownPct===null?"—":Math.round(ownPct*10)/10+"%")+".\nСрок окупаемости: "+(payback===null?"—":Math.round(payback*10)/10+" года/лет")+".\n\n"+
+"8. АНАЛИЗ РИСКОВ\nСтрахование с господдержкой, диверсификация, ветеринарный контроль.\n\n"+
+"9. СОЦИАЛЬНО-ЭКОНОМИЧЕСКИЙ ЭФФЕКТ\nРабочие места, налоги, рост объёмов производства.\n\n"+
+"10. ПРИЛОЖЕНИЯ\nКоммерческие предложения; документы на землю; выписка ЕГРИП; справка ФНС; отчётность АПК.\n\n"+
+"Документ сформирован сервисом «КФХ-Помощник» и является предварительным. Перед подачей сверьте требования программы в Минсельхозпроде РТ.";
+  $("bp-out").textContent=t;
+  $("bp-out").hidden=false;$("bp-actions").hidden=false;
+  var n=parseInt(localStorage.getItem(BP_COUNT_KEY)||"0",10)+1;
+  localStorage.setItem(BP_COUNT_KEY,String(n));
+});
+
+$("bp-copy").addEventListener("click",function(){navigator.clipboard.writeText($("bp-out").textContent).then(function(){alert("Скопировано.");});});
+$("bp-print").addEventListener("click",function(){
+  var w=window.open("","","height=800,width=900");
+  w.document.write("<html><head><meta charset='utf-8'><title>Печать</title><style>body{font-family:Arial;font-size:13px}</style></head><body><pre style='white-space:pre-wrap'>"+esc($("bp-out").textContent)+"</pre></body></html>");
+  w.document.close();w.print();
+});
+$("bp-word").addEventListener("click",function(){
+  var html="<html xmlns:w='urn:schemas-microsoft-com:office:word'><head><meta charset='utf-8'></head><body><pre style='font-family:Arial;font-size:13px'>"+esc($("bp-out").textContent)+"</pre></body></html>";
+  var b=new Blob(["\ufeff",html],{type:"application/msword;charset=utf-8"});
+  var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="business-plan.doc";a.click();
+});
+
+/* ---------- инициализация ---------- */
+(async function init(){
+  if(SB_OK){
+    try{
+      var s=await sb().auth.getSession();
+      if(s.data&&s.data.session)currentUserId=s.data.session.user.id;
+    }catch(e){}
+  }
+  await loadComplianceProfile();
+  await loadBookmarks(); /* из аккаунта или localStorage */
+  renderCards();
+  applyFilter("all");
+})();
+</script>
+
+<script src="ui.js"></script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

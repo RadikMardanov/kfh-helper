@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Вход — КФХ-Помощник</title>
+<meta name="description" content="Вход и регистрация в единый кабинет фермера: документы, расчёты, субсидии и календарь в одном аккаунте." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<!-- Supabase: подключение активно (должно быть ВЫШЕ логики страницы) -->
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--muted-soft:#8a94a0;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--radius-card:22px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.page{max-width:520px;margin:0 auto;padding:16px 16px 32px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.top-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:46px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+
+.hero-mini{margin-top:14px;padding:22px 24px;border-radius:var(--radius-card);color:#fff;background:linear-gradient(100deg,#14532d 0%,#178a46 48%,#7cc31c 100%)}
+.hero-mini h1{font-size:27px;font-weight:900;letter-spacing:-.02em}
+.hero-mini p{margin:8px 0 0;color:rgba(255,255,255,.94);font-size:16px}
+
+.card{margin-top:14px;padding:20px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.label{display:block;margin:14px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:8px;color:var(--muted);font-size:14px}
+
+.auth-tabs{display:flex;gap:8px;margin-bottom:6px}
+.auth-tab{flex:1;min-height:46px;border-radius:12px;border:1px solid #d3d9df;background:#fff;font-weight:700;font-size:16px;cursor:pointer;color:var(--muted);font-family:inherit}
+.auth-tab.active{background:var(--green);border-color:var(--green);color:#fff}
+.btn-block{width:100%;margin-top:16px}
+
+.msg{margin-top:12px;font-size:15px;font-weight:600;min-height:0}
+.msg.error{color:#b91c1c}
+.msg.success{color:#15803d}
+.demo-note{margin-top:14px;padding:10px 12px;background:var(--amber-soft);border:1px solid var(--amber-border);border-radius:10px;color:#6d4d10;font-size:13px}
+
+.footer{margin-top:18px;text-align:center;color:var(--muted-soft);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+.footer a:hover{color:var(--green-dark)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="kfh-topbar">
+    <div class="top-brand">🌱 КФХ-Помощник</div>
+    <a href="index.html" class="btn btn-secondary">На главную</a>
+  </div>
+
+  <section class="hero-mini">
+    <h1 id="page-title">Вход в кабинет</h1>
+    <p id="page-sub">Документы, расчёты и субсидии — всё сохраняется в вашем аккаунте.</p>
+  </section>
+
+  <p id="loading" class="hint" style="text-align:center;margin-top:20px">Загрузка…</p>
+
+  <section class="card" id="auth-card" hidden>
+    <div class="auth-tabs">
+      <button id="tab-login" class="auth-tab active" type="button">Вход</button>
+      <button id="tab-register" class="auth-tab" type="button">Регистрация</button>
+    </div>
+
+    <label class="label" for="email">Электронная почта</label>
+    <input class="input" id="email" type="email" placeholder="you@example.com" autocomplete="email" inputmode="email" />
+
+    <label class="label" for="password">Пароль</label>
+    <input class="input" id="password" type="password" placeholder="Минимум 6 символов" autocomplete="current-password" />
+
+    <div id="confirm-wrap" hidden>
+      <label class="label" for="password2">Повторите пароль</label>
+      <input class="input" id="password2" type="password" placeholder="Ещё раз пароль" autocomplete="new-password" />
+    </div>
+
+    <p class="hint" id="mode-hint">Пароль — минимум 6 символов.</p>
+
+    <button class="btn btn-primary btn-block" id="submit-btn" type="button">Войти</button>
+
+    <p class="msg" id="auth-msg"></p>
+
+    <div class="demo-note" id="demo-note" hidden>
+      Демо-режим: Supabase не настроен. Аккаунт хранится только в этом браузере.
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>© <span id="year"></span> КФХ-Помощник · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+  </footer>
+
+</div>
+
+<script>
+var SESSION_KEY="kfh_helper_demo_session_v1";
+var client=null;
+var isDemo=false;
+var mode="login";
+
+function $(id){return document.getElementById(id);}
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+
+$("year").textContent=new Date().getFullYear();
+
+function setMode(m){
+  mode=m;
+  $("tab-login").classList.toggle("active",m==="login");
+  $("tab-register").classList.toggle("active",m==="register");
+  $("confirm-wrap").hidden=(m!=="register");
+  $("submit-btn").textContent=(m==="login")?"Войти":"Создать аккаунт";
+  $("page-title").textContent=(m==="login")?"Вход в кабинет":"Регистрация";
+  $("page-sub").textContent=(m==="login")?"Документы, расчёты и субсидии — всё сохраняется в вашем аккаунте.":"Создайте аккаунт — ваш прогресс и документы сохранятся.";
+  $("mode-hint").textContent=(m==="login")?"Пароль — минимум 6 символов.":"Пароль — минимум 6 символов. Укажите действующую почту.";
+  clearMsg();
+}
+
+function showError(t){var m=$("auth-msg");m.textContent=t;m.className="msg error";}
+function showSuccess(t){var m=$("auth-msg");m.textContent=t;m.className="msg success";}
+function clearMsg(){var m=$("auth-msg");m.textContent="";m.className="msg";}
+function validEmail(e){return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);}
+
+function translateError(msg){
+  var m=(msg||"").toLowerCase();
+  if(m.indexOf("invalid login credentials")>=0)return "Неверная почта или пароль.";
+  if(m.indexOf("email not confirmed")>=0)return "Почта не подтверждена. Проверьте входящие письма.";
+  if(m.indexOf("password should be at least")>=0)return "Пароль слишком короткий — минимум 6 символов.";
+  if(m.indexOf("already registered")>=0)return "Эта почта уже зарегистрирована. Попробуйте войти.";
+  if(m.indexOf("rate limit")>=0)return "Слишком много попыток. Подождите немного и повторите.";
+  return "Ошибка: "+msg;
+}
+
+function lockBtn(t){$("submit-btn").disabled=true;$("submit-btn").textContent=t||"Подождите…";}
+function unlockBtn(){$("submit-btn").disabled=false;$("submit-btn").textContent=(mode==="login")?"Войти":"Создать аккаунт";}
+
+async function submit(){
+  clearMsg();
+  var email=$("email").value.trim();
+  var pass=$("password").value;
+  if(!validEmail(email)){showError("Введите корректную почту.");return;}
+  if(pass.length<6){showError("Пароль должен быть не короче 6 символов.");return;}
+  if(mode==="register"&&pass!==$("password2").value){showError("Пароли не совпадают.");return;}
+
+  /* демо-режим: без Supabase */
+  if(isDemo){
+    localStorage.setItem(SESSION_KEY,email);
+    location.replace("cabinet.html");
+    return;
+  }
+
+  if(!client){showError("Соединение ещё не готово, повторите через секунду.");return;}
+  lockBtn();
+
+  try{
+    if(mode==="login"){
+      var r=await client.auth.signInWithPassword({email:email,password:pass});
+      if(r.error){showError(translateError(r.error.message));unlockBtn();return;}
+      location.replace("cabinet.html");
+    }else{
+      var r2=await client.auth.signUp({email:email,password:pass});
+      if(r2.error){showError(translateError(r2.error.message));unlockBtn();return;}
+      /* почта уже занята — Supabase вернёт user без identities */
+      if(r2.data.user&&r2.data.user.identities&&r2.data.user.identities.length===0){
+        showError("Эта почта уже зарегистрирована. Попробуйте войти.");
+        unlockBtn();setMode("login");return;
+      }
+      if(r2.data.session){
+        location.replace("cabinet.html");
+      }else if(r2.data.user){
+        showSuccess("Мы отправили ссылку для подтверждения на вашу почту. После подтверждения войдите.");
+        unlockBtn();setMode("login");
+      }else{
+        showSuccess("Регистрация завершена. Теперь войдите.");
+        unlockBtn();setMode("login");
+      }
+    }
+  }catch(e){
+    showError("Ошибка соединения. Попробуйте позже.");
+    unlockBtn();
+  }
+}
+
+$("tab-login").addEventListener("click",function(){setMode("login");});
+$("tab-register").addEventListener("click",function(){setMode("register");});
+$("submit-btn").addEventListener("click",submit);
+[$("email"),$("password"),$("password2")].forEach(function(el){
+  el.addEventListener("keydown",function(e){if(e.key==="Enter")submit();});
+});
+
+/* ---------- АВТОВХОД (пункт 5) + инициализация ---------- */
+(async function(){
+  var redirect=false;
+  if(supabaseReady()){
+    /* создаём клиент ОДИН раз на странице */
+    client=window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);
+    try{
+      var s=await client.auth.getSession();
+      if(s.data&&s.data.session)redirect=true;
+    }catch(e){}
+  }else{
+    isDemo=true;
+    if(localStorage.getItem(SESSION_KEY))redirect=true;
+  }
+  $("loading").style.display="none";
+  if(redirect){location.replace("cabinet.html");return;}
+  if(isDemo)$("demo-note").hidden=false;
+  $("auth-card").hidden=false;
+  setMode("login");
+})();
+</script>
+
+<!-- PWA: регистрация service worker -->
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>

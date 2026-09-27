@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Календарь фермера — КФХ-Помощник</title>
+<meta name="description" content="Календарь фермера: справочные дедлайны по субсидиям, налогам и отчётности + личные события с напоминаниями. Синхронизация между устройствами." />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌱</text></svg>" />
+
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#16a34a" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="КФХ-Помощник" />
+<link rel="apple-touch-icon" href="icon.svg" />
+
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="ui.css" />
+
+<style>
+:root{--page-bg:#e7efe9;--card-bg:#f7f8fa;--card-border:#edeff2;--inner-bg:#fff;--inner-border:#e3e7ec;--ink:#0f172a;--muted:#6b7280;--green:#16a34a;--green-dark:#15803d;--green-deep:#14532d;--green-soft:#e5f5ea;--amber-soft:#fff8e8;--amber-border:#f3e2b6;--red:#b91c1c;--radius-card:22px;--radius-inner:14px;--radius-btn:12px;--shadow-card:0 1px 3px rgba(15,23,42,.05);--font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;font-family:var(--font);background:var(--page-bg);color:var(--ink);line-height:1.55;font-size:17px}
+a{color:inherit;text-decoration:none}p,h1,h2,h3{margin-top:0}
+.wrap{max-width:900px;margin:0 auto;padding:0 16px 40px}
+.kfh-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:14px}
+.kfh-back{display:inline-flex;align-items:center;min-height:44px;padding:10px 15px;border-radius:12px;background:#fff;border:1px solid #d3d9df;font-size:15px;font-weight:700}
+.kfh-back:hover{background:#f3f4f6}
+.kfh-brand{font-weight:900;font-size:17px;color:var(--green-deep)}
+.card{margin-top:14px;padding:20px 22px;background:var(--card-bg);border:1px solid var(--card-border);border-radius:var(--radius-card);box-shadow:var(--shadow-card)}
+.card-title{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-size:22px;font-weight:800}
+.card-title::before{content:"";width:7px;height:26px;border-radius:6px;background:var(--green);flex-shrink:0}
+.label{display:block;margin:12px 0 6px;font-weight:700;font-size:15px;color:#1f2937}
+.input,.select{width:100%;min-height:50px;padding:12px 14px;border:1px solid #d3d9df;border-radius:10px;background:#fff;font-size:17px;font-family:inherit;color:var(--ink)}
+.input:focus,.select:focus{outline:none;border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.15)}
+.hint{margin-top:6px;color:var(--muted);font-size:14px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:11px 19px;border-radius:var(--radius-btn);border:1px solid transparent;font-size:16px;font-weight:700;cursor:pointer;transition:160ms ease;white-space:nowrap}
+.btn:hover{transform:translateY(-1px)}
+.btn-primary{background:var(--green);color:#fff}.btn-primary:hover{background:var(--green-dark)}
+.btn-secondary{background:#fff;border-color:#d3d9df;color:var(--ink)}.btn-secondary:hover{background:#f3f4f6}
+.btn-row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;align-items:center}
+.warn-box{margin-top:14px;padding:13px 16px;background:var(--amber-soft);border:1px solid var(--amber-border);border-left:5px solid #eab308;border-radius:12px;color:#6d4d10;font-size:15px}
+
+/* ========== ЕДИНАЯ ЛЕНТА ФИЛЬТРОВ: одна линия, прокрутка, липкая под вкладками ========== */
+.chip-row{display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap;position:sticky;top:60px;z-index:40;background:var(--page-bg);padding:8px 2px;margin:0 0 14px;scrollbar-width:none}
+.chip-row::-webkit-scrollbar{display:none}
+.chip{flex:0 0 auto;min-height:44px;padding:10px 17px;border-radius:12px;border:1px solid #cfd8d0;background:#fff;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
+.chip.active{background:var(--green);border-color:var(--green);color:#fff}
+
+/* справочные позиции */
+.ref-item{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid var(--inner-border);border-radius:12px;padding:14px;margin-bottom:10px}
+.ref-period{flex:0 0 150px;font-weight:800;font-size:13px;color:var(--green-dark);background:var(--green-soft);border-radius:10px;padding:8px 10px;text-align:center;line-height:1.3}
+.ref-mid{flex:1;min-width:0}
+.ref-title{font-weight:700;color:var(--ink);font-size:15px}
+.ref-note{color:var(--muted);font-size:14px;margin-top:2px}
+.ref-add{min-height:40px;flex:0 0 auto;font-size:14px}
+
+/* мои события */
+.ev-item{display:flex;gap:10px;align-items:center;background:#fff;border:1px solid var(--inner-border);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.ev-item.soon{border-color:var(--amber-border);background:var(--amber-soft)}
+.ev-item.late{border-color:#fecaca;background:#fef2f2}
+.ev-date{font-weight:800;font-size:14px;color:var(--green-dark);flex:0 0 64px}
+.ev-body{flex:1;min-width:0}
+.ev-title{font-weight:700;font-size:15px}
+.ev-cat{color:var(--muted);font-size:13px}
+.ev-days{font-weight:700;font-size:13px;color:var(--muted);white-space:nowrap}
+.ev-item.soon .ev-days{color:#b45309}
+.ev-item.late .ev-days{color:var(--red)}
+.ev-del{min-width:34px;height:34px;border-radius:8px;border:1px solid #fecaca;background:#fff;color:var(--red);font-weight:700;cursor:pointer;flex-shrink:0}
+.footer{margin-top:20px;text-align:center;color:var(--muted);font-size:13px}
+.footer a{color:var(--muted);font-weight:600}
+@media (max-width:640px){
+  .card{padding:16px 14px}
+  .grid-3{grid-template-columns:1fr}
+  .btn-row .btn{flex:1 1 100%;white-space:normal;text-align:center}
+  .ref-item{flex-wrap:wrap}
+  .ref-period{flex:1 1 100%;text-align:left}
+  .ref-add{flex:1 1 100%}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kfh-topbar">
+    <a class="kfh-back" href="cabinet.html">← Кабинет</a>
+    <div class="kfh-brand">🌱 КФХ-Помощник</div>
+  </div>
+
+  <section class="biz-card">
+    <h1>📅 Календарь фермера</h1>
+    <p>Справочные дедлайны по субсидиям, налогам и отчётности + ваши личные события с напоминаниями. Ближайший срок виден в кабинете.</p>
+  </section>
+
+  <div class="kfh-scrnav" id="scrnav"></div>
+
+  <!-- ================= СПРАВОЧНЫЙ КАЛЕНДАРЬ ================= -->
+  <section class="kfh-scr" data-scr="ref" data-title="Справочный">
+    <div class="card">
+      <h2 class="card-title">Справочный календарь</h2>
+      <p class="hint" style="margin:0 0 4px">Выберите категорию — лента прокручивается влево-вправо. Кнопка «+ В мои события» добавляет позицию в личный календарь.</p>
+      <div class="chip-row" id="chips">
+        <button class="chip active" data-cat="all">Все</button>
+        <button class="chip" data-cat="Субсидии">Субсидии</button>
+        <button class="chip" data-cat="Налоги">Налоги</button>
+        <button class="chip" data-cat="Отчётность">Отчётность</button>
+        <button class="chip" data-cat="Ветеринария">Ветеринария</button>
+        <button class="chip" data-cat="Другое">Другое</button>
+      </div>
+      <div id="ref-list"></div>
+      <div class="warn-box">⚠️ Окна подачи и ставки меняются ежегодно. Перед подачей сверяйте сроки с официальными источниками: Минсельхозпрод РТ, ФНС, СФР. Точные даты ваших обязательств — во вкладке «Мои события».</div>
+    </div>
+  </section>
+
+  <!-- ================= МОИ СОБЫТИЯ ================= -->
+  <section class="kfh-scr" data-scr="my" data-title="Мои события">
+    <div class="card">
+      <h2 class="card-title">Мои события</h2>
+      <p class="hint" style="margin:0 0 6px">Личные дедлайны хозяйства. События сохраняются в аккаунте и видны в кабинете («ближайший срок») и на бейдже 📅 в меню.</p>
+      <div class="grid-3">
+        <div style="grid-column:1/-1"><label class="label" for="ev-title">Название события</label><input class="input" id="ev-title" placeholder="Например: Подать заявку на погектарную субсидию"></div>
+        <div><label class="label" for="ev-date">Дата</label><input class="input" type="date" id="ev-date"></div>
+        <div style="grid-column:span 2">
+          <label class="label" for="ev-cat">Категория</label>
+          <select class="select" id="ev-cat">
+            <option>Субсидии</option><option>Налоги</option><option>Отчётность</option>
+            <option>Ветеринария</option><option>Другое</option><option>Своё</option>
+          </select>
+        </div>
+      </div>
+      <div class="btn-row"><button class="btn btn-primary" id="ev-save">Добавить событие</button></div>
+      <div id="ev-list" style="margin-top:16px"></div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <p>© <span id="year"></span> <a href="index.html">КФХ-Помощник</a> · <a href="disclaimer.html">Дисклеймер</a> · <a href="privacy.html">Конфиденциальность</a></p>
+    <p>Справочные сроки ориентировочные и не заменяют официальные уведомления органов.</p>
+  </div>
+</div>
+
+<script src="ui.js"></script>
+<script>
+window.KFH_SCREEN_OPTS={mobile:"ref",desktop:"ref"};
+
+var SESSION_KEY="kfh_helper_demo_session_v1";
+var CAL_KEY="kfh_calendar_v1";
+function $(id){return document.getElementById(id);}
+$("year").textContent=new Date().getFullYear();
+function go(id){if(window.KFH&&KFH.goScreen)KFH.goScreen(id);}
+function supabaseReady(){return typeof window.supabase!=="undefined"&&typeof window.SUPABASE_URL!=="undefined"&&typeof window.SUPABASE_ANON_KEY!=="undefined";}
+function sb(){return window.supabase.createClient(window.SUPABASE_URL,window.SUPABASE_ANON_KEY);}
+function localArr(k){try{var a=JSON.parse(localStorage.getItem(k));return Array.isArray(a)?a:[];}catch(e){return[];}}
+function todayISO(){return new Date().toISOString().split("T")[0];}
+function esc(s){return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
+function daysUntil(iso){return Math.round((new Date(iso+"T00:00:00")-new Date(todayISO()+"T00:00:00"))/86400000);}
+function fmtDateShort(iso){if(!iso)return "—";var p=iso.split("-");return p.length===3?(p[2]+"."+p[1]+"."+p[0].slice(2)):iso;}
+var SB_OK=supabaseReady();
+var currentUserId=null;
+
+/* ---------- справочные позиции ---------- */
+var REF_EVENTS=[
+ {p:"до 31 марта",t:"Декларация по ЕСХН за прошлый год",c:"Налоги",n:"В налоговую по месту регистрации — электронно или на бумаге."},
+ {p:"25.04, 25.07, 25.10",t:"Авансовые платежи по ЕСХН",c:"Налоги",n:"Не позднее 25-го числа месяца, следующего за отчётным кварталом."},
+ {p:"до 30 апреля",t:"3-НДФЛ для ИП — главы КФХ",c:"Налоги",n:"Если были доходы вне ЕСХН (например, аренда имущества)."},
+ {p:"до 31 декабря",t:"Фиксированные страховые взносы ИП",c:"Налоги",n:"Пенсионные и медицинские за год; 1% с дохода свыше 300 тыс. — до 1 июля следующего года."},
+ {p:"ежемесячно до 28",t:"НДФЛ с зарплат работников",c:"Налоги",n:"Если есть наёмные работники — вы налоговый агент."},
+ {p:"март–май",t:"Погектарная (компенсирующая) субсидия",c:"Субсидии",n:"Окно приёма заявок Минсельхозпрода РТ перед посевной; ставки за 1 га по культурам."},
+ {p:"ежеквартально",t:"Субсидия на товарное молоко",c:"Субсидии",n:"По итогам квартала; нужны идентификация животных в ВетИС и объёмы через эВСД."},
+ {p:"апрель–июнь",t:"Грант «Агростартап»",c:"Субсидии",n:"Конкурсная волна; КФХ/ИП не старше 12 месяцев. Возможна осенняя волна."},
+ {p:"май–июль",t:"Гранты «Семейная ферма» и кооперативам",c:"Субсидии",n:"1–2 конкурса в год; бизнес-план и собственный вклад обязательны."},
+ {p:"посевные кампании",t:"Агрострахование с господдержкой",c:"Субсидии",n:"Заключите договор в окно кампании — возместят до 50% премии."},
+ {p:"круглогодично",t:"Льготные кредиты, гарантии, лизинг",c:"Субсидии",n:"ЕСХН-кредитование до ~5%, программа 1764, Росагролизинг — через уполномоченные банки и фонды."},
+ {p:"февраль–март",t:"Формы АПК (АПК-2 и др.)",c:"Отчётность",n:"Годовая отчётность в Минсельхозпрод — нужна для большинства субсидий."},
+ {p:"приём/увольнение",t:"Уведомление МВД по иностранцу",c:"Отчётность",n:"3 рабочих дня на каждое событие; просрочка — штраф по ст. 18.15 КоАП РФ."},
+ {p:"каждая отгрузка",t:"эВСД в «Меркурии»",c:"Ветеринария",n:"Зерно, молоко, мясо отгружаются только с электронными сопроводительными документами."},
+ {p:"перед сезоном",t:"Инструктажи и журналы по охране труда",c:"Другое",n:"Вводный и первичный инструктажи, журналы — первое, что смотрит ГИТ."}
+];
+
+function renderRef(){
+  $("ref-list").innerHTML=REF_EVENTS.map(function(e){
+    return '<div class="ref-item" data-cat="'+esc(e.c)+'">'+
+      '<div class="ref-period">'+esc(e.p)+'</div>'+
+      '<div class="ref-mid"><div class="ref-title">'+esc(e.t)+'</div><div class="ref-note">'+esc(e.n)+'</div></div>'+
+      '<button class="btn btn-secondary ref-add" data-title="'+esc(e.t)+'" type="button">+ В мои события</button>'+
+      '</div>';
+  }).join("");
+  document.querySelectorAll(".ref-add").forEach(function(b){
+    b.addEventListener("click",function(){
+      $("ev-title").value=b.dataset.title;
+      go("my");
+      $("ev-date").focus();
+    });
+  });
+}
+
+/* ---------- фильтр-лента справочника ---------- */
+document.querySelectorAll(".chip").forEach(function(ch){
+  ch.addEventListener("click",function(){
+    document.querySelectorAll(".chip").forEach(function(x){x.classList.remove("active");});
+    ch.classList.add("active");
+    var k=ch.dataset.cat;
+    document.querySelectorAll(".ref-item").forEach(function(el){
+      el.style.display=(k==="all"||el.dataset.cat===k)?"":"none";
+    });
+  });
+});
+
+/* ---------- мои события ---------- */
+async function loadMyEvents(){
+  var list=[];
+  if(SB_OK&&currentUserId){
+    try{
+      var r=await sb().from("calendar_events").select("*").eq("user_id",currentUserId).order("event_date",{ascending:true});
+      if(!r.error&&r.data)list=r.data.map(function(x){return{id:x.id,title:x.title,date:x.event_date,category:x.category};});
+    }catch(e){}
+  }else{
+    list=localArr(CAL_KEY).slice().sort(function(a,b){return(a.date||"").localeCompare(b.date||"");});
+  }
+  return list;
+}
+
+function renderMyEvents(list){
+  var box=$("ev-list");
+  if(!list.length){
+    box.innerHTML='<p class="hint">Событий пока нет. Добавьте первое выше — или нажмите «+ В мои события» в справочном календаре.</p>';
+    return;
+  }
+  box.innerHTML=list.map(function(ev){
+    var d=daysUntil(ev.date||"");
+    var cls=d<0?"late":(d<=7?"soon":"");
+    var txt=d<0?(Math.abs(d)+" дн. назад"):(d===0?"сегодня":(d===1?"завтра":"через "+d+" дн."));
+    return '<div class="ev-item '+cls+'">'+
+      '<div class="ev-date">'+fmtDateShort(ev.date)+'</div>'+
+      '<div class="ev-body"><div class="ev-title">'+esc(ev.title)+'</div><div class="ev-cat">'+esc(ev.category||"")+'</div></div>'+
+      '<div class="ev-days">'+txt+'</div>'+
+      '<button class="ev-del" data-id="'+ev.id+'" title="Удалить">✕</button>'+
+      '</div>';
+  }).join("");
+  document.querySelectorAll(".ev-del").forEach(function(b){
+    b.addEventListener("click",function(){delEvent(b.dataset.id);});
+  });
+}
+
+async function refreshMyEvents(){
+  var list=await loadMyEvents();
+  renderMyEvents(list);
+  if(window.KFH&&KFH.refreshBadges)KFH.refreshBadges();
+}
+
+$("ev-save").addEventListener("click",async function(){
+  var title=$("ev-title").value.trim();
+  var date=$("ev-date").value;
+  var cat=$("ev-cat").value;
+  if(!title||!date){alert("Укажите название и дату события.");return;}
+  if(SB_OK&&currentUserId){
+    try{
+      var res=await sb().from("calendar_events").insert({user_id:currentUserId,title:title,event_date:date,category:cat});
+      if(res.error){alert("Ошибка сохранения: "+res.error.message);return;}
+    }catch(e){alert("Ошибка соединения. Попробуйте позже.");return;}
+  }else{
+    var arr=localArr(CAL_KEY);
+    arr.push({id:Date.now(),title:title,date:date,category:cat});
+    localStorage.setItem(CAL_KEY,JSON.stringify(arr));
+  }
+  $("ev-title").value="";$("ev-date").value="";
+  await refreshMyEvents();
+});
+
+async function delEvent(id){
+  if(!confirm("Удалить событие?"))return;
+  if(SB_OK&&currentUserId){
+    try{await sb().from("calendar_events").delete().eq("id",id);}catch(e){}
+  }else{
+    var arr=localArr(CAL_KEY).filter(function(x){return Number(x.id)!==Number(id);});
+    localStorage.setItem(CAL_KEY,JSON.stringify(arr));
+  }
+  await refreshMyEvents();
+}
+
+/* ---------- старт ---------- */
+(async function init(){
+  if(SB_OK){
+    try{
+      var s=await sb().auth.getSession();
+      if(!s.data.session){location.href="login.html";return;}
+      currentUserId=s.data.session.user.id;
+    }catch(e){location.href="login.html";return;}
+  }else{
+    if(!localStorage.getItem(SESSION_KEY)){location.href="login.html";return;}
+  }
+  renderRef();
+  await refreshMyEvents();
+})();
+</script>
+
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("sw.js");
+  });
+}
+</script>
+</body>
+</html>
