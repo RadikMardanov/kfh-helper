@@ -1,16 +1,16 @@
 /* ============================================
    КФХ-Помощник · серверный прокси к GigaChat (Sber, РФ)
-   Прячет ключи, возвращает СТРОГИЙ JSON полей анкеты.
-   Вызов: POST /.netlify/functions/gigachat-fill
-   Тело: { text?: string, image?: { mime, base64 } }
+   Версия 2: подробные ошибки Сбера + гибкая авторизация.
 
-   Переменные окружения Netlify (уровень САЙТА, бесплатно):
-   GIGACHAT_CLIENT_ID      — обязательно
-   GIGACHAT_CLIENT_SECRET  — обязательно
+   Переменные окружения Netlify (уровень сайта):
+   GIGACHAT_CLIENT_ID      — обязательно (OAuth-режим)
+   GIGACHAT_CLIENT_SECRET  — обязательно (OAuth-режим)
+   GIGACHAT_SCOPE          — необязательно (по умолчанию GIGACHAT_API)
+   GIGACHAT_AUTH_URL       — необязательно (по умолчанию ngw.devices.sberbank.ru:9443/api/v2/oauth)
    GIGACHAT_BASE_URL       — необязательно; для тестового контура:
                              https://gigachat-api.pers.sberbank.ru/gigachat/api/v1
-                             (по умолчанию боевой: https://gigachat.devices.sberbank.ru/api/v1)
-   GIGACHAT_SCOPE          — необязательно (по умолчанию GIGACHAT_API)
+   GIGACHAT_API_KEY        — необязательно; если в кабинете Сбера выдан ГОТОВЫЙ ключ
+                             (тогда OAuth не нужен, ключ используется напрямую)
    ============================================ */
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -18,15 +18,26 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS"
 };
 
-const AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
+const AUTH_URL = process.env.GIGACHAT_AUTH_URL || "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
 const BASE_URL = process.env.GIGACHAT_BASE_URL || "https://gigachat.devices.sberbank.ru/api/v1";
 const SCOPE = process.env.GIGACHAT_SCOPE || "GIGACHAT_API";
 
 let tokenCache = { token: null, expires: 0 };
 
+function makeUuid() {
+  try {
+    if (globalThis.crypto && crypto.randomUUID) return crypto.randomUUID();
+  } catch (e) {}
+  try { return require("crypto").randomUUID(); } catch (e) {}
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 async function getToken() {
-  const id = process.env.GIGACHAT_CLIENT_ID;
-  const secret = process.env.GIGACHAT_CLIENT_SECRET;
+  const id = (process.env.GIGACHAT_CLIENT_ID || "").trim();
+  const secret = (process.env.GIGACHAT_CLIENT_SECRET || "").trim();
   if (!id || !secret) return null;
   if (tokenCache.token && Date.now() < tokenCache.expires - 60000) return tokenCache.token;
   const auth = Buffer.from(id + ":" + secret).toString("base64");
@@ -34,21 +45,25 @@ async function getToken() {
     method: "POST",
     headers: {
       "Authorization": "Basic " + auth,
-      "RqUID": crypto.randomUUID(),
+      "RqUID": makeUuid(),
       "Content-Type": "application/x-www-form-urlencoded"
     },
     body: "scope=" + SCOPE
   });
-  if (!resp.ok) throw new Error("OAuth HTTP " + resp.status);
+  if (!resp.ok) {
+    const t = await resp.text().catch(function () { return ""; });
+    throw new Error("OAuth HTTP " + resp.status + " :: " + t.slice(0, 300));
+  }
   const j = await resp.json();
   let ttl = Number(j.expires_in || 0);
-  if (ttl < 1e6) ttl = ttl * 1000; /* если пришло в секундах */
+  if (ttl < 1e6) ttl = ttl * 1000;
   tokenCache = { token: j.access_token, expires: Date.now() + ttl };
   return j.access_token;
 }
 
 async function chat(messages) {
-  const token = await getToken();
+  let token = process.env.GIGACHAT_API_KEY ? process.env.GIGACHAT_API_KEY.trim() : null;
+  if (!token) token = await getToken();
   if (!token) throw new Error("NO_KEYS");
   const resp = await fetch(BASE_URL + "/chat/completions", {
     method: "POST",
@@ -63,7 +78,10 @@ async function chat(messages) {
       max_tokens: 2000
     })
   });
-  if (!resp.ok) throw new Error("Completions HTTP " + resp.status);
+  if (!resp.ok) {
+    const t = await resp.text().catch(function () { return ""; });
+    throw new Error("Completions HTTP " + resp.status + " :: " + t.slice(0, 300));
+  }
   const j = await resp.json();
   return j.choices && j.choices[0] && j.choices[0].message ? j.choices[0].message.content : "";
 }
@@ -99,13 +117,15 @@ exports.handler = async (event) => {
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: CORS, body: JSON.stringify({ ok: false, error: "METHOD" }) };
   }
-  if (!process.env.GIGACHAT_CLIENT_ID || !process.env.GIGACHAT_CLIENT_SECRET) {
+  const hasOAuth = process.env.GIGACHAT_CLIENT_ID && process.env.GIGACHAT_CLIENT_SECRET;
+  const hasKey = process.env.GIGACHAT_API_KEY;
+  if (!hasOAuth && !hasKey) {
     return {
       statusCode: 200, headers: CORS,
-      body: JSON.stringify({ ok: false, error: "NOT_CONFIGURED", message: "GigaChat не подключён: задайте GIGACHAT_CLIENT_ID и GIGACHAT_CLIENT_SECRET в переменных окружения сайта (Site configuration → Environment variables)." })
+      body: JSON.stringify({ ok: false, error: "NOT_CONFIGURED", message: "GigaChat не подключён: задайте ключи в переменных окружения сайта." })
     };
   }
-  /* MVP: сертификаты GigaChat выпущены российским УЦ, которого нет в доверенном хранилище Node */
+  /* MVP: сертификаты Сбера могут отсутствовать в доверенном хранилище Node */
   process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
   let payload;
